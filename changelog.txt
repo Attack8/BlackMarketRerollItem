@@ -1,0 +1,22 @@
+Vault Hunters JEI Integration v0.1
+Added JEI Integration for the following blocks
+ - Catalyst Infusion Table
+ - Vault Forge
+ - Inscription Table
+ - Tool Station
+
+Vault Hunters JEI Integration v0.2
+Added JEI Integration for the following blocks
+ - Mystery Egg
+ - Hostile Mystery Egg
+ - Black Market
+ - Mod Box
+ - Mystery Box
+
+Vault Hunters JEI Integration v0.3
+Added JEI Integration for the following blocks
+ - Bounty Table (Rewards)
+Fixed a bug where the regular VH recipes were not showing up
+Added chance and count tooltips to mystery box drops
+Combined recipe categories for items crafted in the same block (Tools and Jewels, Gear and Trinkets)
+Backend code cleanup
