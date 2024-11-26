@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.attackeight.black_market_tweaks.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "black_market_tweaks.refmap.json",
+  "client": [
+    "AbstractContainerScreenAccessor",
+    "AbstractElementContainerScreenAccessor",
+    "ShardTradeScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "mixins": [
+    "PlayerBlackMarketDataMixin",
+    "ShardTradeMessageMixin"
+  ]
+}
