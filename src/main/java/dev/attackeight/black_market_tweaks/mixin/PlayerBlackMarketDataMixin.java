@@ -37,7 +37,7 @@ public abstract class PlayerBlackMarketDataMixin {
     private void rollSixTrades(UUID playerUuid, CallbackInfo ci) {
         this.trades.clear();
         for (int i = 0; i < 5; i++) {
-            if(i == 3) i = 4;
+            if(i == 2) i = 3;
             int playerLevel = PlayerVaultStatsData.getServer().getVaultStats(playerUuid).getVaultLevel();
             Set<SoulShardConfig.Trades> tradesList = ModConfigs.SOUL_SHARD.getTrades();
             SoulShardConfig.Trades tradesUsed = null;
@@ -63,18 +63,10 @@ public abstract class PlayerBlackMarketDataMixin {
         if(tradesUsed != null) {
             SelectedTrade trade = new SelectedTrade(tradesUsed.getRandomTrade());
             trade = trade.initialize(playerLevel);
-            this.trades.put(1, trade);
-        }
-        tradesUsed = null;
-        for (OmegaSoulShardConfig.Trades trades : omegaTradesList) {
-            if(playerLevel >= trades.getMinLevel() && (tradesUsed == null || tradesUsed.getMinLevel() < trades.getMinLevel())){
-                tradesUsed = trades;
-            }
-        }
-        if(tradesUsed != null) {
-            SelectedTrade trade = new SelectedTrade(tradesUsed.getRandomTrade());
+            this.trades.put(2, trade);
+            trade = new SelectedTrade(tradesUsed.getRandomTrade());
             trade = trade.initialize(playerLevel);
-            this.trades.put(1, trade);
+            this.trades.put(5, trade);
         }
 
         setNextReset(playerUuid);
@@ -90,7 +82,7 @@ public abstract class PlayerBlackMarketDataMixin {
     private void rollSixTradesWithoutTimer(ServerPlayer player, CallbackInfo ci) {
         this.trades.clear();
         for (int i = 0; i < 5; i++) {
-            if(i == 3) i = 4;
+            if(i == 2) i = 3;
             int playerLevel = PlayerVaultStatsData.getServer().getVaultStats(player.getUUID()).getVaultLevel();
             Set<SoulShardConfig.Trades> tradesList = ModConfigs.SOUL_SHARD.getTrades();
             SoulShardConfig.Trades tradesUsed = null;
@@ -116,18 +108,10 @@ public abstract class PlayerBlackMarketDataMixin {
         if(tradesUsed != null) {
             SelectedTrade trade = new SelectedTrade(tradesUsed.getRandomTrade());
             trade = trade.initialize(playerLevel);
-            this.trades.put(1, trade);
-        }
-        tradesUsed = null;
-        for (OmegaSoulShardConfig.Trades trades : omegaTradesList) {
-            if(playerLevel >= trades.getMinLevel() && (tradesUsed == null || tradesUsed.getMinLevel() < trades.getMinLevel())){
-                tradesUsed = trades;
-            }
-        }
-        if(tradesUsed != null) {
-            SelectedTrade trade = new SelectedTrade(tradesUsed.getRandomTrade());
+            this.trades.put(2, trade);
+            trade = new SelectedTrade(tradesUsed.getRandomTrade());
             trade = trade.initialize(playerLevel);
-            this.trades.put(1, trade);
+            this.trades.put(5, trade);
         }
 
         setNextReset(player.getUUID());

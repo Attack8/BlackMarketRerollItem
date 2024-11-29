@@ -1,12 +1,22 @@
 package dev.attackeight.black_market_tweaks;
 
 import com.mojang.logging.LogUtils;
+import iskallia.vault.VaultMod;
+import iskallia.vault.client.atlas.TextureAtlasRegion;
+import iskallia.vault.init.ModTextureAtlases;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ItemLike;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig.Type;
+import org.lwjgl.system.CallbackI;
 import org.slf4j.Logger;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @Mod(BlackMarketTweaks.ID)
 public class BlackMarketTweaks {
@@ -21,8 +31,14 @@ public class BlackMarketTweaks {
         ModLoadingContext.get().registerConfig(Type.SERVER, ModConfig.SPEC, ID + "-server.toml");
     }
 
-    public static ResourceLocation rl(String path) {
-        return new ResourceLocation(BlackMarketTweaks.ID, path);
+    private static final Map<UUID, BlockPos> LAST_CLICKED_POS = new HashMap<>();
+
+    public static void setLastClickedPos(UUID id, BlockPos pos) {
+        LAST_CLICKED_POS.put(id, pos);
+    }
+
+    public static BlockPos getLastClickedPos(UUID id) {
+        return LAST_CLICKED_POS.get(id);
     }
 
 }

@@ -30,7 +30,7 @@ minecraft {
     mappings channel: 'official', version: "${mc_version}"
     copyIdeResources = true
 
-    // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
 
     runs {
         client {
@@ -198,7 +198,7 @@ dependencies {
     runtimeOnly fg.deobf("curse.maven:vault-integrations-867003:4641741")
     runtimeOnly fg.deobf("curse.maven:applied-energistics-2-223794:4136407")
     runtimeOnly fg.deobf("curse.maven:modular-routers-250294:4984984")
-    runtimeOnly fg.deobf("curse.maven:attackeight-quest-addon-946682:5401585")
+    runtimeOnly fg.deobf("curse.maven:just-enough-vh-1035310:5928262")
 
 }
 

@@ -13,21 +13,33 @@ import javax.annotation.Nonnull;
 @Mixin(value = AbstractElementContainerScreen.class, remap = false)
 public interface AbstractElementContainerScreenAccessor {
 
-    @Accessor(remap = false)
+    @Accessor
     ElementStore getElementStore();
 
-    @Invoker(remap = false)
+    @Invoker
     void invokeRenderElements(@Nonnull PoseStack poseStack, int mouseX, int mouseY, float partialTick);
 
-    @Invoker(remap = false)
+    @Invoker
     void invokeRenderSlotItems(@Nonnull PoseStack poseStack, int mouseX, int mouseY, float partialTick);
 
-    @Invoker(remap = false)
+    @Invoker
     void invokeRenderDebug(@Nonnull PoseStack poseStack);
 
-    @Invoker(remap = false)
+    @Invoker
     void invokeRenderTooltips(@Nonnull PoseStack poseStack, int mouseX, int mouseY);
 
-    @Invoker(value = "getGuiSpatial", remap = false)
+    @Invoker
+    void invokeRenderBackgroundFill(@Nonnull PoseStack stack);
+
+    @Invoker(value = "getGuiSpatial")
     ISpatial getGuiSpacial();
+
+    @Accessor
+    boolean getNeedsLayout();
+
+    @Invoker
+    void invokeLayout(ISpatial parentSpatial);
+
+    @Accessor
+    void setNeedsLayout(boolean bool);
 }

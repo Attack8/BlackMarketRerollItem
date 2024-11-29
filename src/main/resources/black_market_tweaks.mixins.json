@@ -7,13 +7,18 @@
   "client": [
     "AbstractContainerScreenAccessor",
     "AbstractElementContainerScreenAccessor",
+    "BlackMarketRendererAccessor",
+    "BlackMarketRendererMixin",
     "ShardTradeScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1
   },
   "mixins": [
+    "BlackMarketBlockMixin",
+    "BlackMarketTileEntityMixin",
     "PlayerBlackMarketDataMixin",
-    "ShardTradeMessageMixin"
+    "ServerboundResetBlackMarketTradesMessageMixin",
+    "ShardTradeContainerMixin"
   ]
 }
