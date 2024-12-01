@@ -52,7 +52,7 @@ public abstract class ShardTradeContainerMixin {
         }
     }
 
-    @Inject(method = "quickMoveStack", at = @At(value = "HEAD"), cancellable = true)
+    @Inject(method = "quickMoveStack", at = @At(value = "HEAD"), cancellable = true, remap = true)
     private void quickMoveMoreStacks(Player player, int index, CallbackInfoReturnable<ItemStack> cir) {
         ItemStack itemstack = ItemStack.EMPTY;
         Slot slot = (Slot)((AbstractContainerMenu) (Object)this).slots.get(index);

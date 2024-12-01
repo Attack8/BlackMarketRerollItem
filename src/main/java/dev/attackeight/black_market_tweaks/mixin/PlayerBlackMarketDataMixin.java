@@ -1,5 +1,6 @@
 package dev.attackeight.black_market_tweaks.mixin;
 
+import dev.attackeight.black_market_tweaks.BlackMarketTweaks;
 import iskallia.vault.config.OmegaSoulShardConfig;
 import iskallia.vault.config.SoulShardConfig;
 import iskallia.vault.init.ModConfigs;
@@ -36,6 +37,8 @@ public abstract class PlayerBlackMarketDataMixin {
     @Inject(method = "resetTrades", at = @At("HEAD"), cancellable = true)
     private void rollSixTrades(UUID playerUuid, CallbackInfo ci) {
         this.trades.clear();
+        BlackMarketTweaks.LOGGER.info("log1");
+
         for (int i = 0; i < 5; i++) {
             if(i == 2) i = 3;
             int playerLevel = PlayerVaultStatsData.getServer().getVaultStats(playerUuid).getVaultLevel();
@@ -81,6 +84,8 @@ public abstract class PlayerBlackMarketDataMixin {
     @Inject(method = "resetTradesWithoutTimer", at = @At("HEAD"), cancellable = true)
     private void rollSixTradesWithoutTimer(ServerPlayer player, CallbackInfo ci) {
         this.trades.clear();
+        BlackMarketTweaks.LOGGER.info("log2");
+
         for (int i = 0; i < 5; i++) {
             if(i == 2) i = 3;
             int playerLevel = PlayerVaultStatsData.getServer().getVaultStats(player.getUUID()).getVaultLevel();

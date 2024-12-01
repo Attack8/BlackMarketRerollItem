@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(value = BlackMarketBlock.class, remap = false)
 public class BlackMarketBlockMixin  {
 
-    @Inject(method = "use", at = @At("HEAD"))
+    @Inject(method = "use", at = @At("HEAD"), remap = true)
     private void saveUsing(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit, CallbackInfoReturnable<InteractionResult> cir) {
         BlackMarketTweaks.setLastClickedPos(player.getUUID(), pos);
     }

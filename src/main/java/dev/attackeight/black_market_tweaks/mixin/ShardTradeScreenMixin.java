@@ -97,6 +97,12 @@ public abstract class ShardTradeScreenMixin {
             ci.cancel();
         }
 
+        BlackMarketTweaks.LOGGER.info("--------- Available Trades ---------");
+        ClientShardTradeData.getAvailableTrades().forEach((i, t) -> {
+            BlackMarketTweaks.LOGGER.info("{} : {}, {}", i, t.getA(), t.getB());
+        });
+        BlackMarketTweaks.LOGGER.info("------------------------------------");
+
         ((AbstractElementContainerScreenAccessor) this).getElementStore().removeAllElements();
 
         this.screenParticleLeft = (new ScreenParticle()).angleRange(150.0F, 210.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(((AbstractContainerScreenAccessor)this).getLeftPos() + 76, ((AbstractContainerScreenAccessor)this).getTopPos() + 76).spawnedWidthHeight(0, 28);
@@ -356,7 +362,7 @@ public abstract class ShardTradeScreenMixin {
         ci.cancel();
     }
 
-    @Inject(method = "render", at = @At(value = "HEAD"), cancellable = true)
+    @Inject(method = "render", at = @At(value = "HEAD"), cancellable = true, remap = true)
     private void addMoreParticles(PoseStack poseStack, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         AbstractElementContainerScreenAccessor accessor = (AbstractElementContainerScreenAccessor) this;
         AbstractContainerScreenAccessor cs = (AbstractContainerScreenAccessor) this;

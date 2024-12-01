@@ -1,7 +1,6 @@
 package dev.attackeight.black_market_tweaks.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Vector3f;
 import iskallia.vault.block.BlackMarketBlock;
 import iskallia.vault.block.entity.BlackMarketTileEntity;
 import iskallia.vault.block.render.BlackMarketRenderer;
@@ -12,8 +11,10 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = BlackMarketRenderer.class, remap = false)
@@ -86,11 +87,27 @@ public class BlackMarketRendererMixin {
         ci.cancel();
     }
 
-    @Inject(method = "renderInputItem", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;mulPose(Lcom/mojang/math/Quaternion;)V", ordinal = 0))
+    @Inject(method = "renderInputItem", at = @At(value = "HEAD"))
     private void allowRenderingMoreInputs(PoseStack matrixStack, MultiBufferSource buffer, int lightLevel, int overlay, float yOffset, float scale, ItemStack itemStack, Direction dir, int i, CallbackInfo ci) {
-        if (i > 2) {
-            i = i - 3;
-            matrixStack.translate(-0.8 , i == 0 ? -0.01 : 0.0,  i == 0 ? -0.8 : (i == 1 ? -1.6 : 0.0));
+//        if (i > 2) {
+//            i = i - 3;
+//            matrixStack.pushPose();
+//            matrixStack.translate(-0.8 , i == 0 ? -0.01 : 0.0,  i == 0 ? -0.8 : (i == 1 ? -1.6 : 0.0));
+//            matrixStack.popPose();
+//        }
+        blackMarketTweaks$counter = i;
+    }
+
+    @Unique private static int blackMarketTweaks$counter = -1;
+
+    @Redirect(method = "renderInputItem", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(DDD)V", ordinal = 1), remap = true)
+    private void appositionMoreItemsCorrectly(PoseStack instance, double x, double y, double z) {
+        int i = blackMarketTweaks$counter;
+        if (i < 3) {
+            instance.translate(x, y, z);
+        } else {
+            instance.translate(i == 3 ? 0.0 : (i == 4 ? 0.8 : -0.8), -0.4 + 0.7 + (i == 3 ? 0.0 : -0.05), (i == 3 ? -0.01 : 0.0));
+            // instance.translate(i == 4 ? -0.8 : (i == 5 ? -1.6 : 0.0), -0.4, i == 4 ? -0.01 : 0.0 );
         }
     }
 
