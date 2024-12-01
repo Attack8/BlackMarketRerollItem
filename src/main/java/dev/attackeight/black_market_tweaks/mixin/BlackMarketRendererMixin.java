@@ -89,12 +89,6 @@ public class BlackMarketRendererMixin {
 
     @Inject(method = "renderInputItem", at = @At(value = "HEAD"))
     private void allowRenderingMoreInputs(PoseStack matrixStack, MultiBufferSource buffer, int lightLevel, int overlay, float yOffset, float scale, ItemStack itemStack, Direction dir, int i, CallbackInfo ci) {
-//        if (i > 2) {
-//            i = i - 3;
-//            matrixStack.pushPose();
-//            matrixStack.translate(-0.8 , i == 0 ? -0.01 : 0.0,  i == 0 ? -0.8 : (i == 1 ? -1.6 : 0.0));
-//            matrixStack.popPose();
-//        }
         blackMarketTweaks$counter = i;
     }
 
@@ -106,8 +100,7 @@ public class BlackMarketRendererMixin {
         if (i < 3) {
             instance.translate(x, y, z);
         } else {
-            instance.translate(i == 3 ? 0.0 : (i == 4 ? 0.8 : -0.8), -0.4 + 0.7 + (i == 3 ? 0.0 : -0.05), (i == 3 ? -0.01 : 0.0));
-            // instance.translate(i == 4 ? -0.8 : (i == 5 ? -1.6 : 0.0), -0.4, i == 4 ? -0.01 : 0.0 );
+            instance.translate(i == 3 ? 0.0 : (i == 4 ? 0.8 : -0.8), 0.1 + (i == 3 ? 0.0 : -0.05), (i == 3 ? -0.01 : 0.0));
         }
     }
 

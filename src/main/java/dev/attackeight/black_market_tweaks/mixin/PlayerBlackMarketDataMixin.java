@@ -37,7 +37,6 @@ public abstract class PlayerBlackMarketDataMixin {
     @Inject(method = "resetTrades", at = @At("HEAD"), cancellable = true)
     private void rollSixTrades(UUID playerUuid, CallbackInfo ci) {
         this.trades.clear();
-        BlackMarketTweaks.LOGGER.info("log1");
 
         for (int i = 0; i < 5; i++) {
             if(i == 2) i = 3;
@@ -84,7 +83,6 @@ public abstract class PlayerBlackMarketDataMixin {
     @Inject(method = "resetTradesWithoutTimer", at = @At("HEAD"), cancellable = true)
     private void rollSixTradesWithoutTimer(ServerPlayer player, CallbackInfo ci) {
         this.trades.clear();
-        BlackMarketTweaks.LOGGER.info("log2");
 
         for (int i = 0; i < 5; i++) {
             if(i == 2) i = 3;

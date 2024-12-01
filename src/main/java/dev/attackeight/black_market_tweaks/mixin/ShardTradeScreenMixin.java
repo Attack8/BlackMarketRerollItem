@@ -97,12 +97,6 @@ public abstract class ShardTradeScreenMixin {
             ci.cancel();
         }
 
-        BlackMarketTweaks.LOGGER.info("--------- Available Trades ---------");
-        ClientShardTradeData.getAvailableTrades().forEach((i, t) -> {
-            BlackMarketTweaks.LOGGER.info("{} : {}, {}", i, t.getA(), t.getB());
-        });
-        BlackMarketTweaks.LOGGER.info("------------------------------------");
-
         ((AbstractElementContainerScreenAccessor) this).getElementStore().removeAllElements();
 
         this.screenParticleLeft = (new ScreenParticle()).angleRange(150.0F, 210.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(((AbstractContainerScreenAccessor)this).getLeftPos() + 76, ((AbstractContainerScreenAccessor)this).getTopPos() + 76).spawnedWidthHeight(0, 28);
@@ -204,7 +198,7 @@ public abstract class ShardTradeScreenMixin {
             })).setDisabled(() -> {
                 return !this.canBuyTrade(tradeIndex);
             }).tooltip(Tooltips.multi(() -> List.of(new TextComponent("Learn Marketer Expertise to Unlock")))
-            ))).setEnabled(!this.canBuyTrade(tradeIndex));
+            ))).setEnabled(!this.checkExpertiseUtil(tradeIndex - 2));
             int yOffset = 14 + i * 33 - 99;
             ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(196, yOffset), () -> {
                 Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(tradeIndex);
@@ -273,7 +267,7 @@ public abstract class ShardTradeScreenMixin {
         })).setDisabled(() -> {
             return !this.canBuyTrade(newTradeIndex);
         }).tooltip(Tooltips.multi(() -> List.of(new TextComponent("Learn Marketer Expertise to Unlock"))))
-        )).setEnabled(!this.canBuyTrade(newTradeIndex));
+        )).setEnabled(!this.checkExpertiseUtil(newTradeIndex - 2));
         ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(196, yOffset), () -> {
             Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(newTradeIndex);
             return trade == null ? ItemStack.EMPTY : trade.getA().copy();
@@ -415,15 +409,20 @@ public abstract class ShardTradeScreenMixin {
             if (cir.getReturnValue() && tradeIndex >= 3) {
                 cir.setReturnValue(false);
                 int lvlRequired = tradeIndex - 2;
-                List<TieredSkill> skills = ClientExpertiseData.getLearnedTalentNodes();
-
-                for (TieredSkill skill : skills) {
-                    if (skill.getChild() instanceof BlackMarketExpertise && skill.getSpentLearnPoints() >= lvlRequired) {
-                        cir.setReturnValue(true);
-                        break;
-                    }
-                }
+                cir.setReturnValue(checkExpertiseUtil(lvlRequired));
             }
         }
+    }
+
+    @Unique
+    private boolean checkExpertiseUtil(int lvlRequired) {
+        List<TieredSkill> skills = ClientExpertiseData.getLearnedTalentNodes();
+
+        for (TieredSkill skill : skills) {
+            if (skill.getChild() instanceof BlackMarketExpertise && skill.getSpentLearnPoints() >= lvlRequired) {
+                return true;
+            }
+        }
+        return false;
     }
 }

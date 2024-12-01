@@ -19,7 +19,6 @@
     "BlackMarketTileEntityMixin",
     "PlayerBlackMarketDataMixin",
     "ServerboundResetBlackMarketTradesMessageMixin",
-    "ShardTradeContainerMixin",
-    "ShardTradeMessageMixin"
+    "ShardTradeContainerMixin"
   ]
 }
