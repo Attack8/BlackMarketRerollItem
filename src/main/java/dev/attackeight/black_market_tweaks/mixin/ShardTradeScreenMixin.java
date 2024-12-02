@@ -2,7 +2,7 @@ package dev.attackeight.black_market_tweaks.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.attackeight.black_market_tweaks.BlackMarketTweaks;
-import dev.attackeight.black_market_tweaks.Client;
+import dev.attackeight.black_market_tweaks.TextureDefinitions;
 import dev.attackeight.black_market_tweaks.CountDownElement;
 import iskallia.vault.client.ClientExpertiseData;
 import iskallia.vault.client.ClientShardTradeData;
@@ -30,7 +30,6 @@ import net.minecraft.network.chat.*;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.ContainerSynchronizer;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.*;
@@ -105,7 +104,7 @@ public abstract class ShardTradeScreenMixin {
         this.bmt$screenParticleLeft = (new ScreenParticle()).angleRange(150.0F, 210.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(((AbstractContainerScreenAccessor)this).getLeftPos() + 76, ((AbstractContainerScreenAccessor)this).getTopPos() + 76).spawnedWidthHeight(0, 28);
         this.bmt$screenParticleRight = (new ScreenParticle()).angleRange(-30.0F, 30.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(((AbstractContainerScreenAccessor)this).getLeftPos() + 77 + 90, ((AbstractContainerScreenAccessor)this).getTopPos() + 76).spawnedWidthHeight(0, 28);
 
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((TextureAtlasElement)(new TextureAtlasElement(((AbstractElementContainerScreenAccessor) this).getGuiSpacial(), Client.BLACK_MARKET_BACKGROUND)).layout((screen, gui, parent, world) -> {
+        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((TextureAtlasElement)(new TextureAtlasElement(((AbstractElementContainerScreenAccessor) this).getGuiSpacial(), TextureDefinitions.BLACK_MARKET_BACKGROUND)).layout((screen, gui, parent, world) -> {
             world.translateXY(gui.left() - 55, gui.top()).size(Spatials.copy(gui));
         }));
         ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((SlotsElement)(new SlotsElement((ShardTradeScreen) (Object) this)).layout((screen, gui, parent, world) -> {
@@ -132,6 +131,9 @@ public abstract class ShardTradeScreenMixin {
             tooltipRenderer.renderTooltip(poseStack, new ItemStack(ModItems.UNKNOWN_ITEM), mouseX, mouseY, TooltipDirection.RIGHT);
             return true;
         });
+        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((TextureAtlasElement)(new TextureAtlasElement(Spatials.positionXY(-26, 80), TextureDefinitions.BLACK_MARKET_REROLL_ORNAMENT)).layout((screen, gui, parent, world) -> {
+            world.translateXY(gui);
+        }));
         ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(Spatials.positionXY(-21, 54), new ItemStack(ModItems.SOUL_SHARD))).layout((screen, gui, parent, world) -> {
             world.translateXY(gui);
         }));

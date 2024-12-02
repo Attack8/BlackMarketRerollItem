@@ -98,7 +98,7 @@ public class BlackMarketRendererMixin {
     private void appositionMoreItemsCorrectly(PoseStack instance, double x, double y, double z) {
         int i = blackMarketTweaks$counter;
         if (i < 3) {
-            instance.translate(x, y, z);
+            instance.translate(x, y + 0.3, z);
         } else {
             instance.translate(i == 3 ? 0.0 : (i == 4 ? 0.8 : -0.8), 0.1 + (i == 3 ? 0.0 : -0.05), (i == 3 ? -0.01 : 0.0));
         }
