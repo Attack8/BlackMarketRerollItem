@@ -10,6 +10,9 @@ import iskallia.vault.client.gui.framework.ScreenTextures;
 import iskallia.vault.client.gui.framework.element.*;
 import iskallia.vault.client.gui.framework.render.TooltipDirection;
 import iskallia.vault.client.gui.framework.render.Tooltips;
+import iskallia.vault.client.gui.framework.render.spi.IElementRenderer;
+import iskallia.vault.client.gui.framework.render.spi.ITooltipRendererFactory;
+import iskallia.vault.client.gui.framework.screen.AbstractElementContainerScreen;
 import iskallia.vault.client.gui.framework.spatial.Spatials;
 import iskallia.vault.client.gui.framework.spatial.spi.IMutableSpatial;
 import iskallia.vault.client.gui.framework.text.LabelTextStyle;
@@ -73,6 +76,8 @@ public abstract class ShardTradeScreenMixin {
     @Shadow @Final private LabelElement<?> labelRandomTrade;
 
     @Shadow @Final private LabelElement<?>[] labelShopTrades;
+
+    @Unique protected LabelElement<?> soulShardCount;
 
     @Shadow private float dt;
 
@@ -300,7 +305,7 @@ public abstract class ShardTradeScreenMixin {
         LocalDateTime nowTime = LocalDateTime.now(ZoneId.of("UTC")).withNano(0);
         LocalTime diff = LocalTime.MIN.plusSeconds(ChronoUnit.SECONDS.between(nowTime, endTime));
         Component component = new TextComponent(diff.format(DateTimeFormatter.ISO_LOCAL_TIME));
-        IMutableSpatial var10003 = Spatials.positionXYZ(((AbstractElementContainerScreenAccessor) this).getGuiSpacial().width() / 2 - ((Font) TextBorder.DEFAULT_FONT.get()).width(component) / 2 - 11, -10, 200);
+        IMutableSpatial var10003 = Spatials.positionXYZ(((AbstractElementContainerScreenAccessor) this).getGuiSpacial().width() / 2 - TextBorder.DEFAULT_FONT.get().width(component) / 2 - 11, -10, 200);
         int var10004 = TextBorder.DEFAULT_FONT.get().width(component);
         Objects.requireNonNull(TextBorder.DEFAULT_FONT.get());
         ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((new CountDownElement(var10003, Spatials.size(var10004, 9), () -> {
@@ -328,6 +333,18 @@ public abstract class ShardTradeScreenMixin {
                 return List.of(new TextComponent("Put an item in the re-roll slot to re-roll"));
             }
         })));
+
+        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((TextureAtlasElement)((TextureAtlasElement<?>)(new TextureAtlasElement(Spatials.positionXY(((AbstractElementContainerScreenAccessor) this).getGuiSpacial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() - 40, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height()), ScreenTextures.TAB_COUNTDOWN_BACKGROUND)).layout((screen, gui, parent, world) -> {
+            world.translateXY(gui);
+        })).tooltip(Tooltips.multi(() -> List.of(new TextComponent("Number of Soul Shards in Inventory")))));
+        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(Spatials.positionXY(((AbstractElementContainerScreenAccessor) this).getGuiSpacial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() - 37, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height() + 3), new ItemStack(ModItems.SOUL_SHARD))).layout((screen, gui, parent, world) -> {
+            world.translateXY(gui);
+        })).setScale(0.8f);
+
+        this.soulShardCount = (LabelElement)((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(((AbstractElementContainerScreenAccessor) this).getGuiSpacial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() - 8, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height() + 5, 200), TextComponent.EMPTY, LabelTextStyle.shadow().center())).layout((screen, gui, parent, world) -> {
+            world.translateXYZ(gui);
+        }));
+
         this.updateTradeLabels();
     }
 
@@ -354,6 +371,21 @@ public abstract class ShardTradeScreenMixin {
                 Component tradeCostComponent = (new TextComponent(String.valueOf(tradeCost))).withStyle(Style.EMPTY.withColor(TextColor.fromRgb(tradeCostColor)));
                 this.labelShopTrades[i].set(tradeCostComponent);
             }
+        }
+
+        if (soulShardCount != null) {
+            char unit = ',';
+            double shardCount = playerShards;
+            if (playerShards >= 1000000) {
+                unit = 'M';
+                shardCount = Math.round(shardCount / 1000000.0);
+            } else if (playerShards >= 1000) {
+                unit = 'k';
+                shardCount = Math.round(shardCount / 1000.0);
+            }
+            TextComponent text = new TextComponent(String.valueOf(shardCount));
+            if (unit != ',') text.append(String.valueOf(unit));
+            this.soulShardCount.set(text);
         }
         ci.cancel();
     }
