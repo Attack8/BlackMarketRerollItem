@@ -42,6 +42,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -378,16 +380,26 @@ public abstract class ShardTradeScreenMixin {
             double shardCount = playerShards;
             if (playerShards >= 1000000) {
                 unit = 'M';
-                shardCount = Math.round(shardCount / 1000000.0);
+                shardCount = shardCount / 1000000;
             } else if (playerShards >= 1000) {
                 unit = 'k';
-                shardCount = Math.round(shardCount / 1000.0);
+                shardCount = shardCount / 1000;
             }
+            shardCount = round(shardCount, 1);
             TextComponent text = new TextComponent(String.valueOf(shardCount));
             if (unit != ',') text.append(String.valueOf(unit));
             this.soulShardCount.set(text);
         }
         ci.cancel();
+    }
+
+    @Unique
+    private static double round(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+
+        BigDecimal bd = BigDecimal.valueOf(value);
+        bd = bd.setScale(places, RoundingMode.HALF_UP);
+        return bd.doubleValue();
     }
 
     @Inject(method = "render", at = @At(value = "HEAD"), cancellable = true, remap = true)
