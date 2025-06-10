@@ -11,6 +11,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -22,14 +23,18 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = BlackMarketBlock.class, remap = false)
-public class BlackMarketBlockMixin  {
+public class BlackMarketBlockMixin extends HorizontalDirectionalBlock {
+
+    protected BlackMarketBlockMixin(Properties p_54120_) {
+        super(p_54120_);
+    }
 
     @Inject(method = "use", at = @At("HEAD"), remap = true)
     private void saveUsing(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit, CallbackInfoReturnable<InteractionResult> cir) {
         BlackMarketTweaks.setLastClickedPos(player.getUUID(), pos);
     }
 
-    @Unique
+    @Override
     public void onRemove(BlockState state, @NotNull Level level, @NotNull BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())) {
             BlockEntity tile = level.getBlockEntity(pos);
