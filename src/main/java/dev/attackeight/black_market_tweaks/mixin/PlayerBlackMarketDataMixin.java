@@ -1,6 +1,5 @@
 package dev.attackeight.black_market_tweaks.mixin;
 
-import dev.attackeight.black_market_tweaks.BlackMarketTweaks;
 import iskallia.vault.config.OmegaSoulShardConfig;
 import iskallia.vault.config.SoulShardConfig;
 import iskallia.vault.init.ModConfigs;

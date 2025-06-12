@@ -38,6 +38,6 @@ public final class CountDownElement extends DynamicLabelElement<Component, Count
         LocalDateTime nowTime = LocalDateTime.now(ZoneId.of("UTC")).withNano(0);
         LocalTime diff = LocalTime.MIN.plusSeconds(ChronoUnit.SECONDS.between(nowTime, endTime));
         Component component = new TextComponent(diff.format(DateTimeFormatter.ISO_LOCAL_TIME));
-        this.onValueChanged((Component)component);
+        this.onValueChanged(component);
     }
 }

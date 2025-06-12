@@ -20,14 +20,17 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 
+@ParametersAreNonnullByDefault
+@SuppressWarnings({"deprecation", "unchecked", "RawUseOfParameterized"})
 @Mixin(value = BlackMarketBlock.class, remap = false)
 public abstract class BlackMarketBlockMixin extends HorizontalDirectionalBlock implements EntityBlock, InventoryRetainerBlock {
 
@@ -41,20 +44,19 @@ public abstract class BlackMarketBlockMixin extends HorizontalDirectionalBlock i
     }
 
     @Override
-    public void onRemove(BlockState state, @NotNull Level level, @NotNull BlockPos pos, BlockState newState, boolean isMoving) {
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         this.onInventoryBlockDestroy(level, pos);
         super.onRemove(state, level, pos, newState, isMoving);
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, BlockGetter level, List<Component> tooltip, TooltipFlag flag) {
-        this.addInventoryTooltip(stack, tooltip, (is, tag) -> InventoryRetainerTileEntity.displayContentsOverSized(1, stacks -> {
-            stacks.addAll(OverSizedInventory.loadContents("inventory", (CompoundTag) tag));
-        }));
+    public void appendHoverText(ItemStack stack, @Nullable BlockGetter level, List<Component> tooltip, TooltipFlag flag) {
+        this.addInventoryTooltip(stack, tooltip, (is, tag) -> InventoryRetainerTileEntity.displayContentsOverSized(1,
+                stacks -> stacks.addAll(OverSizedInventory.loadContents("inventory", (CompoundTag) tag))));
     }
 
     @Override
-    public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         this.onInventoryBlockPlace(level, pos, stack);
     }
 }

@@ -2,13 +2,9 @@ package dev.attackeight.black_market_tweaks.mixin;
 
 import dev.attackeight.black_market_tweaks.BlackMarketTweaks;
 import iskallia.vault.block.entity.BlackMarketTileEntity;
-import iskallia.vault.client.gui.screen.ShardTradeScreen;
-import iskallia.vault.container.inventory.ShardTradeContainer;
 import iskallia.vault.container.oversized.OverSizedInventory;
-import iskallia.vault.init.ModConfigs;
 import iskallia.vault.network.message.ServerboundResetBlackMarketTradesMessage;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.network.NetworkEvent;

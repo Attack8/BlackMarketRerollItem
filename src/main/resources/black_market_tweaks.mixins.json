@@ -5,9 +5,6 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "black_market_tweaks.refmap.json",
   "client": [
-    "AbstractContainerScreenAccessor",
-    "AbstractElementContainerScreenAccessor",
-    "BlackMarketRendererAccessor",
     "BlackMarketRendererMixin",
     "ShardTradeScreenMixin"
   ],

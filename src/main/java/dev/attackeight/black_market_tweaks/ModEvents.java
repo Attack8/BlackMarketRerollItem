@@ -15,15 +15,15 @@ public class ModEvents {
             String configValue = event.getConfig().getConfigData().get("item");
             ResourceLocation itemLocation = ResourceLocation.tryParse(configValue);
             if (itemLocation == null) {
-                BlackMarketTweaks.LOGGER.error("Error Loading Config: Entry Given is not a Resource Location (" + configValue + ")");
+                BlackMarketTweaks.LOGGER.error("Error Loading Config: Entry Given is not a Resource Location ({})", configValue);
                 return;
             }
             if (!ForgeRegistries.ITEMS.containsKey(itemLocation)) {
-                BlackMarketTweaks.LOGGER.error("Error Loading Config: Item not Present with Resource Location (" + configValue + ")");
+                BlackMarketTweaks.LOGGER.error("Error Loading Config: Item not Present with Resource Location ({})", configValue);
                 return;
             }
             BlackMarketTweaks.item = ForgeRegistries.ITEMS.getValue(itemLocation);
-            BlackMarketTweaks.LOGGER.info("Successfully loaded re-roll item at resource location " + itemLocation);
+            BlackMarketTweaks.LOGGER.info("Successfully loaded re-roll item at resource location {}", itemLocation);
         }
     }
 }

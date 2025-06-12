@@ -11,6 +11,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -18,11 +19,14 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = BlackMarketRenderer.class, remap = false)
-public class BlackMarketRendererMixin {
+public abstract class BlackMarketRendererMixin {
+
+    @Shadow protected abstract void renderOutputItem(PoseStack matrixStack, MultiBufferSource buffer, int lightLevel, int overlay, float yOffset, float scale, ItemStack itemStack, Direction dir, int i);
+
+    @Shadow protected abstract void renderInputItem(PoseStack matrixStack, MultiBufferSource buffer, int lightLevel, int overlay, float yOffset, float scale, ItemStack itemStack, Direction dir, int i);
 
     @Inject(method = "render(Liskallia/vault/block/entity/BlackMarketTileEntity;FLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;II)V", at = @At("HEAD"), cancellable = true)
     private void renderMoreTradeItems(BlackMarketTileEntity blackMarketTile, float partialTicks, PoseStack matrixStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay, CallbackInfo ci) {
-        BlackMarketRendererAccessor bmr = (BlackMarketRendererAccessor) this;
         Level world = blackMarketTile.getLevel();
         if (world != null) {
             Direction dir = blackMarketTile.getBlockState().getValue(BlackMarketBlock.FACING);
@@ -30,58 +34,58 @@ public class BlackMarketRendererMixin {
             if (ClientShardTradeData.getAvailableTrades().containsKey(2)) {
                 itemStack = ClientShardTradeData.getTradeInfo(2).getA();
                 matrixStack.pushPose();
-                bmr.invokeRenderInputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, itemStack, dir, 0);
+                this.renderInputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, itemStack, dir, 0);
                 matrixStack.popPose();
             }
 
             if (ClientShardTradeData.getAvailableTrades().containsKey(0)) {
                 itemStack = ClientShardTradeData.getTradeInfo(0).getA();
                 matrixStack.pushPose();
-                bmr.invokeRenderInputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, itemStack, dir, 1);
+                this.renderInputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, itemStack, dir, 1);
                 matrixStack.popPose();
             }
 
             if (ClientShardTradeData.getAvailableTrades().containsKey(1)) {
                 itemStack = ClientShardTradeData.getTradeInfo(1).getA();
                 matrixStack.pushPose();
-                bmr.invokeRenderInputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, itemStack, dir, 2);
+                this.renderInputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, itemStack, dir, 2);
                 matrixStack.popPose();
             }
             if (ClientShardTradeData.getAvailableTrades().containsKey(5)) {
                 itemStack = ClientShardTradeData.getTradeInfo(5).getA();
                 matrixStack.pushPose();
-                bmr.invokeRenderInputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, itemStack, dir, 3);
+                this.renderInputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, itemStack, dir, 3);
                 matrixStack.popPose();
             }
 
             if (ClientShardTradeData.getAvailableTrades().containsKey(3)) {
                 itemStack = ClientShardTradeData.getTradeInfo(3).getA();
                 matrixStack.pushPose();
-                bmr.invokeRenderInputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, itemStack, dir, 4);
+                this.renderInputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, itemStack, dir, 4);
                 matrixStack.popPose();
             }
 
             if (ClientShardTradeData.getAvailableTrades().containsKey(4)) {
                 itemStack = ClientShardTradeData.getTradeInfo(4).getA();
                 matrixStack.pushPose();
-                bmr.invokeRenderInputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, itemStack, dir, 5);
+                this.renderInputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, itemStack, dir, 5);
                 matrixStack.popPose();
             }
 
             matrixStack.pushPose();
-            bmr.invokeRenderOutputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, new ItemStack(ModItems.SOUL_SHARD), dir, 0);
+            this.renderOutputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, new ItemStack(ModItems.SOUL_SHARD), dir, 0);
             matrixStack.popPose();
             matrixStack.pushPose();
-            bmr.invokeRenderOutputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, new ItemStack(ModItems.SOUL_SHARD), dir, 1);
+            this.renderOutputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, new ItemStack(ModItems.SOUL_SHARD), dir, 1);
             matrixStack.popPose();
             matrixStack.pushPose();
-            bmr.invokeRenderOutputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, new ItemStack(ModItems.SOUL_SHARD), dir, 2);
+            this.renderOutputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, new ItemStack(ModItems.SOUL_SHARD), dir, 2);
             matrixStack.popPose();
             matrixStack.pushPose();
-            bmr.invokeRenderOutputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, new ItemStack(ModItems.SOUL_SHARD), dir, 3);
+            this.renderOutputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, new ItemStack(ModItems.SOUL_SHARD), dir, 3);
             matrixStack.popPose();
             matrixStack.pushPose();
-            bmr.invokeRenderOutputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, new ItemStack(ModItems.SOUL_SHARD), dir, 4);
+            this.renderOutputItem(matrixStack, buffer, combinedLight, combinedOverlay, 0.64F, 0.35F, new ItemStack(ModItems.SOUL_SHARD), dir, 4);
             matrixStack.popPose();
         }
         ci.cancel();

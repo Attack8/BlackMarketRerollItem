@@ -2,8 +2,8 @@ package dev.attackeight.black_market_tweaks.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.attackeight.black_market_tweaks.BlackMarketTweaks;
-import dev.attackeight.black_market_tweaks.TextureDefinitions;
 import dev.attackeight.black_market_tweaks.CountDownElement;
+import dev.attackeight.black_market_tweaks.TextureDefinitions;
 import iskallia.vault.client.ClientExpertiseData;
 import iskallia.vault.client.ClientShardTradeData;
 import iskallia.vault.client.gui.framework.ScreenTextures;
@@ -28,7 +28,6 @@ import iskallia.vault.skill.base.TieredSkill;
 import iskallia.vault.skill.expertise.type.BlackMarketExpertise;
 import iskallia.vault.util.ScreenParticle;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.*;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Tuple;
@@ -53,7 +52,11 @@ import java.util.List;
 import java.util.Objects;
 
 @Mixin(value = ShardTradeScreen.class, remap = false)
-public abstract class ShardTradeScreenMixin {
+public abstract class ShardTradeScreenMixin extends AbstractElementContainerScreen<ShardTradeContainer> {
+
+    public ShardTradeScreenMixin(ShardTradeContainer container, Inventory inventory, Component title, IElementRenderer elementRenderer, ITooltipRendererFactory tooltipRendererFactory) {
+        super(container, inventory, title, elementRenderer, tooltipRendererFactory);
+    }
 
     @Shadow protected ScreenParticle screenParticleLeft;
 
@@ -79,10 +82,11 @@ public abstract class ShardTradeScreenMixin {
 
     @Shadow @Final private LabelElement<?>[] labelShopTrades;
 
-    @Unique protected LabelElement<?> soulShardCount;
+    @Unique protected LabelElement<?> blackMarketTweaks$soulShardCount;
 
     @Shadow private float dt;
 
+    @SuppressWarnings({"RawUseOfParameterized", "unchecked"})
     @Inject(method = "<init>", at = @At(value = "RETURN"), cancellable = true)
     private void allowSixTrades(ShardTradeContainer container, Inventory inventory, Component title, CallbackInfo ci) {
 
@@ -103,86 +107,65 @@ public abstract class ShardTradeScreenMixin {
             ci.cancel();
         }
 
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().removeAllElements();
+        this.elementStore.removeAllElements();
 
-        this.screenParticleLeft = (new ScreenParticle()).angleRange(150.0F, 210.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(((AbstractContainerScreenAccessor)this).getLeftPos() + 76, ((AbstractContainerScreenAccessor)this).getTopPos() + 76).spawnedWidthHeight(0, 28);
-        this.screenParticleRight = (new ScreenParticle()).angleRange(-30.0F, 30.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(((AbstractContainerScreenAccessor)this).getLeftPos() + 77 + 90, ((AbstractContainerScreenAccessor)this).getTopPos() + 76).spawnedWidthHeight(0, 28);
+        this.screenParticleLeft = (new ScreenParticle()).angleRange(150.0F, 210.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(leftPos + 76, topPos + 76).spawnedWidthHeight(0, 28);
+        this.screenParticleRight = (new ScreenParticle()).angleRange(-30.0F, 30.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(leftPos + 77 + 90, topPos + 76).spawnedWidthHeight(0, 28);
 
-        this.bmt$screenParticleLeft = (new ScreenParticle()).angleRange(150.0F, 210.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(((AbstractContainerScreenAccessor)this).getLeftPos() + 76, ((AbstractContainerScreenAccessor)this).getTopPos() + 76).spawnedWidthHeight(0, 28);
-        this.bmt$screenParticleRight = (new ScreenParticle()).angleRange(-30.0F, 30.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(((AbstractContainerScreenAccessor)this).getLeftPos() + 77 + 90, ((AbstractContainerScreenAccessor)this).getTopPos() + 76).spawnedWidthHeight(0, 28);
+        this.bmt$screenParticleLeft = (new ScreenParticle()).angleRange(150.0F, 210.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(leftPos + 76, topPos + 76).spawnedWidthHeight(0, 28);
+        this.bmt$screenParticleRight = (new ScreenParticle()).angleRange(-30.0F, 30.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(leftPos + 77 + 90, topPos + 76).spawnedWidthHeight(0, 28);
 
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((TextureAtlasElement)(new TextureAtlasElement(((AbstractElementContainerScreenAccessor) this).getGuiSpacial(), TextureDefinitions.BLACK_MARKET_BACKGROUND)).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui.left() - 55, gui.top()).size(Spatials.copy(gui));
-        }));
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((SlotsElement)(new SlotsElement((ShardTradeScreen) (Object) this)).layout((screen, gui, parent, world) -> {
-            world.positionXY(gui);
-        }));
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((LabelElement)(new LabelElement(Spatials.positionXY(-47, 7), (new TextComponent("Black Market")).withStyle(Style.EMPTY.withColor(-12632257)), LabelTextStyle.defaultStyle())).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        }));
+        this.addElement((new TextureAtlasElement(this.getGuiSpatial(), TextureDefinitions.BLACK_MARKET_BACKGROUND))
+                .layout((screen, gui, parent, world) -> world.translateXY(gui.left() - 55, gui.top()).size(Spatials.copy(gui))));
+        this.addElement((new SlotsElement((ShardTradeScreen) (Object) this))
+                .layout((screen, gui, parent, world) -> world.positionXY(gui)));
+        this.addElement((new LabelElement(Spatials.positionXY(-47, 7), (new TextComponent("Black Market")).withStyle(Style.EMPTY.withColor(-12632257)), LabelTextStyle.defaultStyle())).layout((screen, gui, parent, world) ->
+            world.translateXY(gui)));
         MutableComponent inventoryName = inventory.getDisplayName().copy();
         inventoryName.withStyle(Style.EMPTY.withColor(-12632257));
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((LabelElement)(new LabelElement(Spatials.positionXY(8, 110), inventoryName, LabelTextStyle.defaultStyle())).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        }));
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((TextureAtlasElement)(new TextureAtlasElement(Spatials.positionXY(-37, 18), ScreenTextures.SOUL_SHARD_TRADE_ORNAMENT)).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        }));
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(-21, 34), () -> {
-            return new ItemStack(ModItems.UNKNOWN_ITEM);
-        }, () -> {
-            return !this.canBuyRandomTrade();
-        })).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        })).whenClicked(this::buyRandomTrade).tooltip((tooltipRenderer, poseStack, mouseX, mouseY, tooltipFlag) -> {
-            tooltipRenderer.renderTooltip(poseStack, new ItemStack(ModItems.UNKNOWN_ITEM), mouseX, mouseY, TooltipDirection.RIGHT);
-            return true;
-        });
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((TextureAtlasElement)(new TextureAtlasElement(Spatials.positionXY(-26, 80), TextureDefinitions.BLACK_MARKET_REROLL_ORNAMENT)).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        }));
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(Spatials.positionXY(-21, 54), new ItemStack(ModItems.SOUL_SHARD))).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        }));
+        this.addElement((LabelElement)(new LabelElement(Spatials.positionXY(8, 110), inventoryName, LabelTextStyle.defaultStyle()))
+                .layout((screen, gui, parent, world) -> world.translateXY(gui)));
+        this.addElement((new TextureAtlasElement(Spatials.positionXY(-37, 18), ScreenTextures.SOUL_SHARD_TRADE_ORNAMENT))
+                .layout((screen, gui, parent, world) -> world.translateXY(gui)));
+        this.addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(-21, 34),
+                () -> new ItemStack(ModItems.UNKNOWN_ITEM), () -> !this.canBuyRandomTrade()))
+                .layout((screen, gui, parent, world) -> world.translateXY(gui)))
+                .whenClicked(this::buyRandomTrade)
+                .tooltip((tooltipRenderer, poseStack, mouseX, mouseY, tooltipFlag) -> {
+                    tooltipRenderer.renderTooltip(poseStack, new ItemStack(ModItems.UNKNOWN_ITEM), mouseX, mouseY, TooltipDirection.RIGHT);
+                    return true;
+                });
+        this.addElement((new ItemStackDisplayElement(this.getGuiSpatial(), new ItemStack(ModItems.SOUL_SHARD)))
+                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() - 21, gui.top() + 54)));
         try {
-            labelRandomTradeReflection.set(this, (LabelElement)((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(-13, 64, 200), TextComponent.EMPTY, LabelTextStyle.border8().center())).layout((screen, gui, parent, world) -> {
-                world.translateXYZ(gui);})));
+            labelRandomTradeReflection.set(this, this.addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(-13, 64, 200), TextComponent.EMPTY, LabelTextStyle.border8().center()))
+                    .layout((screen, gui, parent, world) -> world.translateXYZ(gui))));
         } catch (IllegalAccessException e) {
             BlackMarketTweaks.LOGGER.error("Exception thrown while tweaking black market: ", e);
         }
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((TextureAtlasElement)(new TextureAtlasElement(Spatials.positionXY(24, 6), ScreenTextures.BLACK_MARKET_ORNAMENT)).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        }));
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((TextureAtlasElement)(new TextureAtlasElement(Spatials.positionXY(22, 70), ScreenTextures.OMEGA_BLACK_MARKET_ORNAMENT)).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        }));
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((TextureAtlasElement)(new TextureAtlasElement(Spatials.positionXY(129, 6), ScreenTextures.BLACK_MARKET_ORNAMENT)).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        }));
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((TextureAtlasElement)(new TextureAtlasElement(Spatials.positionXY(127, 70), ScreenTextures.OMEGA_BLACK_MARKET_ORNAMENT)).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        }));
+        this.addElement((new TextureAtlasElement(this.getGuiSpatial(), TextureDefinitions.BLACK_MARKET_ORNAMENT))
+                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 24, gui.top() + 6)));
+        this.addElement((new TextureAtlasElement(this.getGuiSpatial(), ScreenTextures.OMEGA_BLACK_MARKET_ORNAMENT))
+                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 22, gui.top() + 70)));
+        this.addElement((new TextureAtlasElement(this.getGuiSpatial(), TextureDefinitions.BLACK_MARKET_ORNAMENT))
+                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 129, gui.top() + 6)));
+        this.addElement((new TextureAtlasElement(this.getGuiSpatial(), ScreenTextures.OMEGA_BLACK_MARKET_ORNAMENT))
+                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 127, gui.top() + 70)));
 
         for(int i = 0; i < 2; ++i) {
             int tradeIndex = i;
             int yOffsetTrade = 10 + i * 33;
-            ((ButtonElement)((AbstractElementContainerScreenAccessor) this).getElementStore().addElement(((ButtonElement)(new ButtonElement(Spatials.positionXY(28, yOffsetTrade), ScreenTextures.BUTTON_TRADE_WIDE_TEXTURES, () -> {
-            })).layout((screen, gui, parent, world) -> {
-                world.translateXY(gui);
-            })).setDisabled(() -> {
-                return !this.canBuyTrade(tradeIndex);
-            }))).setEnabled(false);
+            (this.addElement(((ButtonElement)(new ButtonElement(Spatials.positionXY(28, yOffsetTrade), ScreenTextures.BUTTON_TRADE_WIDE_TEXTURES, () -> {}))
+                    .layout((screen, gui, parent, world) -> world.translateXY(gui))).setDisabled(() -> !this.canBuyTrade(tradeIndex))))
+                    .setEnabled(false);
             int yOffset = 14 + i * 33;
-            ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(91, yOffset), () -> {
+            this.addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(91, yOffset), () -> {
                 Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(tradeIndex);
                 return trade == null ? ItemStack.EMPTY : trade.getA().copy();
-            }, () -> {
-                return !this.canBuyTrade(tradeIndex);
-            })).setLabelStackCount().layout((screen, gui, parent, world) -> {
-                world.translateXY(gui);
-            })).whenClicked(() -> {
-                this.buyTrade(tradeIndex);
-            }).tooltip((tooltipRenderer, poseStack, mouseX, mouseY, tooltipFlag) -> {
+            }, () -> !this.canBuyTrade(tradeIndex)
+            )).setLabelStackCount().layout((screen, gui, parent, world) -> world.translateXY(gui)))
+            .whenClicked(() -> this.buyTrade(tradeIndex))
+            .tooltip((tooltipRenderer, poseStack, mouseX, mouseY, tooltipFlag) -> {
                 Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(tradeIndex);
                 if (trade != null && !trade.getA().isEmpty()) {
                     tooltipRenderer.renderTooltip(poseStack, trade.getA(), mouseX, mouseY, TooltipDirection.RIGHT);
@@ -190,35 +173,28 @@ public abstract class ShardTradeScreenMixin {
 
                 return true;
             });
-            ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(Spatials.positionXY(39, yOffset), new ItemStack(ModItems.SOUL_SHARD))).layout((screen, gui, parent, world) -> {
-                world.translateXY(gui);
-            }));
-            this.labelShopTrades[i] = (LabelElement)((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(47, yOffset + 10, 200), TextComponent.EMPTY, LabelTextStyle.border8().center())).layout((screen, gui, parent, world) -> {
-                world.translateXYZ(gui);
-            }));
+            this.addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(this.getGuiSpatial(), new ItemStack(ModItems.SOUL_SHARD)))
+                    .layout((screen, gui, parent, world) -> world.translateXY(gui.left() + 39, gui.top() + yOffset)));
+            this.labelShopTrades[i] = (LabelElement)this.addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(47, yOffset + 10, 200), TextComponent.EMPTY, LabelTextStyle.border8().center()))
+                    .layout((screen, gui, parent, world) -> world.translateXYZ(gui)));
         }
 
         for(int i = 3; i < 5; ++i) {
             int tradeIndex = i;
             int yOffsetTrade = 10 + i * 33 - 99;
-            ((ButtonElement)((AbstractElementContainerScreenAccessor) this).getElementStore().addElement(((ButtonElement)(new ButtonElement(Spatials.positionXY(133, yOffsetTrade), ScreenTextures.BUTTON_TRADE_WIDE_TEXTURES, () -> {
-            })).layout((screen, gui, parent, world) -> {
-                world.translateXY(gui);
-            })).setDisabled(() -> {
-                return !this.canBuyTrade(tradeIndex);
-            }).tooltip(Tooltips.multi(() -> List.of(new TextComponent("Learn Marketer Expertise to Unlock")))
-            ))).setEnabled(!this.checkExpertiseUtil(tradeIndex - 2));
+            (this.addElement(((ButtonElement)(new ButtonElement(Spatials.positionXY(133, yOffsetTrade), ScreenTextures.BUTTON_TRADE_WIDE_TEXTURES, () -> {
+            })).layout((screen, gui, parent, world) -> world.translateXY(gui)))
+            .setDisabled(() -> !this.canBuyTrade(tradeIndex))
+            .tooltip(Tooltips.multi(() -> List.of(new TextComponent("Learn Marketer Expertise to Unlock"))))))
+            .setEnabled(!this.blackMarketTweaks$checkExpertiseUtil(tradeIndex - 2));
             int yOffset = 14 + i * 33 - 99;
-            ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(196, yOffset), () -> {
+            this.addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(196, yOffset), () -> {
                 Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(tradeIndex);
                 return trade == null ? ItemStack.EMPTY : trade.getA().copy();
-            }, () -> {
-                return !this.canBuyTrade(tradeIndex);
-            })).setLabelStackCount().layout((screen, gui, parent, world) -> {
-                world.translateXY(gui);
-            })).whenClicked(() -> {
-                this.buyTrade(tradeIndex);
-            }).tooltip((tooltipRenderer, poseStack, mouseX, mouseY, tooltipFlag) -> {
+            }, () -> !this.canBuyTrade(tradeIndex)))
+            .setLabelStackCount().layout((screen, gui, parent, world) -> world.translateXY(gui)))
+            .whenClicked(() -> this.buyTrade(tradeIndex))
+            .tooltip((tooltipRenderer, poseStack, mouseX, mouseY, tooltipFlag) -> {
                 Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(tradeIndex);
                 if (trade != null && !trade.getA().isEmpty()) {
                     tooltipRenderer.renderTooltip(poseStack, trade.getA(), mouseX, mouseY, TooltipDirection.RIGHT);
@@ -226,31 +202,25 @@ public abstract class ShardTradeScreenMixin {
 
                 return true;
             });
-            ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(Spatials.positionXY(144, yOffset), new ItemStack(ModItems.SOUL_SHARD))).layout((screen, gui, parent, world) -> {
-                world.translateXY(gui);
-            }));
-            this.labelShopTrades[i] = (LabelElement)((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(152, yOffset + 10, 200), TextComponent.EMPTY, LabelTextStyle.border8().center())).layout((screen, gui, parent, world) -> {
-                world.translateXYZ(gui);
-            }));
+            this.addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(this.getGuiSpatial(), new ItemStack(ModItems.SOUL_SHARD)))
+                    .layout((screen, gui, parent, world) -> world.translateXY(gui.left() + 144, gui.top() + yOffset)));
+            this.labelShopTrades[i] = (LabelElement)this.addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(152, yOffset + 10, 200), TextComponent.EMPTY, LabelTextStyle.border8().center()))
+                    .layout((screen, gui, parent, world) -> world.translateXYZ(gui)));
         }
 
         int tradeIndex = 2;
         int yOffsetTrade = 76;
-        ((ButtonElement)((AbstractElementContainerScreenAccessor) this).getElementStore().addElement(this.omegaButton = ((ButtonElement)(new ButtonElement(Spatials.positionXY(27, yOffsetTrade - 1), ScreenTextures.OMEGA_BUTTON_TRADE_WIDE_TEXTURES, () -> {
-        })).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        })).setDisabled(() -> {
-            return !this.canBuyTrade(tradeIndex);
-        }))).setEnabled(false);
+        (this.addElement(this.omegaButton = ((ButtonElement)(new ButtonElement(Spatials.positionXY(27, yOffsetTrade - 1), ScreenTextures.OMEGA_BUTTON_TRADE_WIDE_TEXTURES, () -> {}))
+        .layout((screen, gui, parent, world) -> world.translateXY(gui)))
+        .setDisabled(() -> !this.canBuyTrade(tradeIndex))))
+        .setEnabled(false);
         int yOffset = 80;
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(91, yOffset), () -> {
+        this.addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(91, yOffset), () -> {
             Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(tradeIndex);
             return trade == null ? ItemStack.EMPTY : trade.getA().copy();
-        }, () -> {
-            return !this.canBuyTrade(tradeIndex);
-        })).setLabelStackCount().layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        })).whenClicked(() -> {
+        }, () -> !this.canBuyTrade(tradeIndex)))
+        .setLabelStackCount().layout((screen, gui, parent, world) -> world.translateXY(gui)))
+        .whenClicked(() -> {
             this.buyTrade(tradeIndex);
             this.screenParticleLeft.pop(4.0F, 20.0F);
             this.screenParticleRight.pop(4.0F, 20.0F);
@@ -262,29 +232,23 @@ public abstract class ShardTradeScreenMixin {
 
             return true;
         });
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(Spatials.positionXY(39, yOffset), new ItemStack(ModItems.SOUL_SHARD))).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        }));
-        this.labelShopTrades[2] = (LabelElement)((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(47, yOffset + 10, 200), TextComponent.EMPTY, LabelTextStyle.border8().center())).layout((screen, gui, parent, world) -> {
-            world.translateXYZ(gui);
-        }));
+        this.addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(this.getGuiSpatial(), new ItemStack(ModItems.SOUL_SHARD)))
+                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 39, gui.top() + yOffset)));
+        this.labelShopTrades[2] = (LabelElement)this.addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(47, yOffset + 10, 200), TextComponent.EMPTY, LabelTextStyle.border8().center()))
+                .layout((screen, gui, parent, world) -> world.translateXYZ(gui)));
 
         int newTradeIndex = 5;
-        ((ButtonElement)((AbstractElementContainerScreenAccessor) this).getElementStore().addElement(this.omegaButton = (ButtonElement) ((ButtonElement)(new ButtonElement(Spatials.positionXY(132, yOffsetTrade - 1), ScreenTextures.OMEGA_BUTTON_TRADE_WIDE_TEXTURES, () -> {
-        })).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        })).setDisabled(() -> {
-            return !this.canBuyTrade(newTradeIndex);
-        }).tooltip(Tooltips.multi(() -> List.of(new TextComponent("Learn Marketer Expertise to Unlock"))))
-        )).setEnabled(!this.checkExpertiseUtil(newTradeIndex - 2));
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(196, yOffset), () -> {
+        (this.addElement(this.omegaButton = (ButtonElement) ((ButtonElement)(new ButtonElement(Spatials.positionXY(132, yOffsetTrade - 1), ScreenTextures.OMEGA_BUTTON_TRADE_WIDE_TEXTURES, () -> {}))
+        .layout((screen, gui, parent, world) -> world.translateXY(gui)))
+        .setDisabled(() -> !this.canBuyTrade(newTradeIndex))
+        .tooltip(Tooltips.multi(() -> List.of(new TextComponent("Learn Marketer Expertise to Unlock"))))))
+        .setEnabled(!this.blackMarketTweaks$checkExpertiseUtil(newTradeIndex - 2));
+        this.addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(196, yOffset), () -> {
             Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(newTradeIndex);
             return trade == null ? ItemStack.EMPTY : trade.getA().copy();
-        }, () -> {
-            return !this.canBuyTrade(newTradeIndex);
-        })).setLabelStackCount().layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        })).whenClicked(() -> {
+        }, () -> !this.canBuyTrade(newTradeIndex)))
+        .setLabelStackCount().layout((screen, gui, parent, world) -> world.translateXY(gui)))
+        .whenClicked(() -> {
             this.buyTrade(newTradeIndex);
             this.bmt$screenParticleLeft.pop(4.0F, 20.0F);
             this.bmt$screenParticleRight.pop(4.0F, 20.0F);
@@ -296,36 +260,30 @@ public abstract class ShardTradeScreenMixin {
 
             return true;
         });
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(Spatials.positionXY(144, yOffset), new ItemStack(ModItems.SOUL_SHARD))).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        }));
-        this.labelShopTrades[5] = (LabelElement)((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(152, yOffset + 10, 200), TextComponent.EMPTY, LabelTextStyle.border8().center())).layout((screen, gui, parent, world) -> {
-            world.translateXYZ(gui);
-        }));
+        this.addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(this.getGuiSpatial(), new ItemStack(ModItems.SOUL_SHARD)))
+                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 144, gui.top() + yOffset)));
+        this.labelShopTrades[5] = (LabelElement)this.addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(152, yOffset + 10, 200), TextComponent.EMPTY, LabelTextStyle.border8().center()))
+                .layout((screen, gui, parent, world) -> world.translateXYZ(gui)));
 
         LocalDateTime endTime = ClientShardTradeData.getNextReset();
         LocalDateTime nowTime = LocalDateTime.now(ZoneId.of("UTC")).withNano(0);
         LocalTime diff = LocalTime.MIN.plusSeconds(ChronoUnit.SECONDS.between(nowTime, endTime));
         Component component = new TextComponent(diff.format(DateTimeFormatter.ISO_LOCAL_TIME));
-        IMutableSpatial var10003 = Spatials.positionXYZ(((AbstractElementContainerScreenAccessor) this).getGuiSpacial().width() / 2 - TextBorder.DEFAULT_FONT.get().width(component) / 2 - 11, -10, 200);
+        IMutableSpatial var10003 = Spatials.positionXYZ(this.getGuiSpatial().width() / 2 - TextBorder.DEFAULT_FONT.get().width(component) / 2 - 11, -10, 200);
         int var10004 = TextBorder.DEFAULT_FONT.get().width(component);
         Objects.requireNonNull(TextBorder.DEFAULT_FONT.get());
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((new CountDownElement(var10003, Spatials.size(var10004, 9), () -> {
-            return component;
-        }, LabelTextStyle.shadow())).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui.x(), gui.y());
-        }));
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((TextureAtlasElement)((TextureAtlasElement<?>)(new TextureAtlasElement(Spatials.positionXY(((AbstractElementContainerScreenAccessor) this).getGuiSpacial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() / 2 - 10, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height()), ScreenTextures.TAB_COUNTDOWN_BACKGROUND)).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        })).tooltip(Tooltips.multi(() -> List.of(new TextComponent("Shop resets in")))));
+        this.addElement((new CountDownElement(var10003, Spatials.size(var10004, 9), () -> component,
+                LabelTextStyle.shadow())).layout((screen, gui, parent, world) -> world.translateXY(gui.x(), gui.y())));
+        this.addElement((TextureAtlasElement)((TextureAtlasElement<?>)(new TextureAtlasElement(Spatials.positionXY(this.getGuiSpatial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() / 2 - 10, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height()), ScreenTextures.TAB_COUNTDOWN_BACKGROUND))
+                .layout((screen, gui, parent, world) -> world.translateXY(gui)))
+                .tooltip(Tooltips.multi(() -> List.of(new TextComponent("Shop resets in")))));
 
-        Slot rerollSlot = ((AbstractContainerScreenAccessor<?>) this).invokeGetMenu().slots.get(36);
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((ButtonElement)((ButtonElement)(new ButtonElement(Spatials.positionXY(((AbstractElementContainerScreenAccessor) this).getGuiSpacial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() / 2 + 50, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height()), ScreenTextures.BUTTON_RESET_TRADES_TEXTURES, () -> {
+        Slot rerollSlot = this.menu.slots.get(36);
+        this.addElement((ButtonElement)((ButtonElement)(new ButtonElement(Spatials.positionXY( this.getGuiSpatial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() / 2 + 50, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height()), ScreenTextures.BUTTON_RESET_TRADES_TEXTURES, () -> {
             ModNetwork.CHANNEL.sendToServer(ServerboundResetBlackMarketTradesMessage.INSTANCE);
-            ((ShardTradeContainer) ((AbstractContainerScreenAccessor) this).invokeGetMenu()).getPlayer().level.playSound(((ShardTradeContainer)((AbstractContainerScreenAccessor) this).invokeGetMenu()).getPlayer(), ((ShardTradeContainer)((AbstractContainerScreenAccessor) this).invokeGetMenu()).getPlayer().getX(), ((ShardTradeContainer)((AbstractContainerScreenAccessor) this).invokeGetMenu()).getPlayer().getY(), ((ShardTradeContainer)((AbstractContainerScreenAccessor) this).invokeGetMenu()).getPlayer().getZ(), ModSounds.SKILL_TREE_LEARN_SFX, SoundSource.BLOCKS, 0.75F, 1.0F);
-        })).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        })).setDisabled(() -> !rerollSlot.hasItem()
+            this.menu.getPlayer().level.playSound(this.menu.getPlayer(), this.menu.getPlayer().getX(), this.menu.getPlayer().getY(), this.menu.getPlayer().getZ(), ModSounds.SKILL_TREE_LEARN_SFX, SoundSource.BLOCKS, 0.75F, 1.0F);
+        })).layout((screen, gui, parent, world) -> world.translateXY(gui)))
+            .setDisabled(() -> !rerollSlot.hasItem()
         ).tooltip(Tooltips.multi(() -> {
             int numOfRollsLeft = rerollSlot.getItem().getCount();
 
@@ -336,16 +294,13 @@ public abstract class ShardTradeScreenMixin {
             }
         })));
 
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((TextureAtlasElement)((TextureAtlasElement<?>)(new TextureAtlasElement(Spatials.positionXY(((AbstractElementContainerScreenAccessor) this).getGuiSpacial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() - 40, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height()), ScreenTextures.TAB_COUNTDOWN_BACKGROUND)).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        })).tooltip(Tooltips.multi(() -> List.of(new TextComponent("Number of Soul Shards in Inventory")))));
-        ((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(Spatials.positionXY(((AbstractElementContainerScreenAccessor) this).getGuiSpacial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() - 37, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height() + 3), new ItemStack(ModItems.SOUL_SHARD))).layout((screen, gui, parent, world) -> {
-            world.translateXY(gui);
-        })).setScale(0.8f);
+        this.addElement(((new TextureAtlasElement(Spatials.positionXY(this.getGuiSpatial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() - 40, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height()), ScreenTextures.TAB_COUNTDOWN_BACKGROUND))
+                .layout((screen, gui, parent, world) -> world.translateXY(gui))).tooltip(Tooltips.multi(() -> List.of(new TextComponent("Number of Soul Shards in Inventory")))));
+        this.addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(Spatials.positionXY(this.getGuiSpatial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() - 37, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height() + 3), new ItemStack(ModItems.SOUL_SHARD)))
+                .layout((screen, gui, parent, world) -> world.translateXY(gui))).setScale(0.8f);
 
-        this.soulShardCount = (LabelElement)((AbstractElementContainerScreenAccessor) this).getElementStore().addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(((AbstractElementContainerScreenAccessor) this).getGuiSpacial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() - 8, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height() + 5, 200), TextComponent.EMPTY, LabelTextStyle.shadow().center())).layout((screen, gui, parent, world) -> {
-            world.translateXYZ(gui);
-        }));
+        this.blackMarketTweaks$soulShardCount = this.addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(this.getGuiSpatial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() - 8, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height() + 5, 200), TextComponent.EMPTY, LabelTextStyle.shadow().center()))
+                .layout((screen, gui, parent, world) -> world.translateXYZ(gui)));
 
         this.updateTradeLabels();
     }
@@ -375,7 +330,7 @@ public abstract class ShardTradeScreenMixin {
             }
         }
 
-        if (soulShardCount != null) {
+        if (blackMarketTweaks$soulShardCount != null) {
             char unit = ',';
             double shardCount = playerShards;
             if (playerShards >= 1000000) {
@@ -385,33 +340,23 @@ public abstract class ShardTradeScreenMixin {
                 unit = 'k';
                 shardCount = shardCount / 1000;
             }
-            shardCount = round(shardCount, 1);
+
+            BigDecimal bd = BigDecimal.valueOf(shardCount).setScale(1, RoundingMode.HALF_UP);
+            shardCount = bd.doubleValue();
             TextComponent text = new TextComponent(String.valueOf(shardCount));
             if (unit != ',') text.append(String.valueOf(unit));
-            this.soulShardCount.set(text);
+            this.blackMarketTweaks$soulShardCount.set(text);
         }
         ci.cancel();
     }
 
-    @Unique
-    private static double round(double value, int places) {
-        if (places < 0) throw new IllegalArgumentException();
-
-        BigDecimal bd = BigDecimal.valueOf(value);
-        bd = bd.setScale(places, RoundingMode.HALF_UP);
-        return bd.doubleValue();
-    }
-
     @Inject(method = "render", at = @At(value = "HEAD"), cancellable = true, remap = true)
     private void addMoreParticles(PoseStack poseStack, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-        AbstractElementContainerScreenAccessor accessor = (AbstractElementContainerScreenAccessor) this;
-        AbstractContainerScreenAccessor cs = (AbstractContainerScreenAccessor) this;
-
         this.dt += partialTick;
-        this.screenParticleLeft.spawnedPosition(cs.getLeftPos() + 27, cs.getTopPos() + 74).spawnedWidthHeight(0, 29);
-        this.screenParticleRight.spawnedPosition(cs.getLeftPos() + 27 + 90, cs.getTopPos() + 74).spawnedWidthHeight(0, 29);
-        this.bmt$screenParticleLeft.spawnedPosition(cs.getLeftPos() + 77 + 55, cs.getTopPos() + 74).spawnedWidthHeight(0, 29);
-        this.bmt$screenParticleRight.spawnedPosition(cs.getLeftPos() + 77 + 90 + 55, cs.getTopPos() + 74).spawnedWidthHeight(0, 29);
+        this.screenParticleLeft.spawnedPosition(leftPos + 27, topPos + 74).spawnedWidthHeight(0, 29);
+        this.screenParticleRight.spawnedPosition(leftPos + 27 + 90, topPos + 74).spawnedWidthHeight(0, 29);
+        this.bmt$screenParticleLeft.spawnedPosition(leftPos + 77 + 55, topPos + 74).spawnedWidthHeight(0, 29);
+        this.bmt$screenParticleRight.spawnedPosition(leftPos + 77 + 90 + 55, topPos + 74).spawnedWidthHeight(0, 29);
 
         for(; this.dt >= 0.5F; this.dt -= 0.5F) {
             this.screenParticleLeft.tick();
@@ -428,20 +373,20 @@ public abstract class ShardTradeScreenMixin {
             }
         }
 
-        if (accessor.getNeedsLayout()) {
-            accessor.invokeLayout(Spatials.zero());
-            accessor.setNeedsLayout(false);
+        if (this.needsLayout) {
+            this.layout(Spatials.zero());
+            this.needsLayout = false;
         }
 
-        accessor.invokeRenderBackgroundFill(poseStack);
-        accessor.invokeRenderElements(poseStack, mouseX, mouseY, partialTick);
-        accessor.invokeRenderSlotItems(poseStack, mouseX, mouseY, partialTick);
-        accessor.invokeRenderDebug(poseStack);
+        this.renderBackgroundFill(poseStack);
+        this.renderElements(poseStack, mouseX, mouseY, partialTick);
+        this.renderSlotItems(poseStack, mouseX, mouseY, partialTick);
+        this.renderDebug(poseStack);
         this.screenParticleLeft.render(poseStack, partialTick);
         this.screenParticleRight.render(poseStack, partialTick);
         this.bmt$screenParticleLeft.render(poseStack, partialTick);
         this.bmt$screenParticleRight.render(poseStack, partialTick);
-        accessor.invokeRenderTooltips(poseStack, mouseX, mouseY);
+        this.renderTooltips(poseStack, mouseX, mouseY);
         ci.cancel();
     }
 
@@ -455,13 +400,13 @@ public abstract class ShardTradeScreenMixin {
             if (cir.getReturnValue() && tradeIndex >= 3) {
                 cir.setReturnValue(false);
                 int lvlRequired = tradeIndex - 2;
-                cir.setReturnValue(checkExpertiseUtil(lvlRequired));
+                cir.setReturnValue(blackMarketTweaks$checkExpertiseUtil(lvlRequired));
             }
         }
     }
 
     @Unique
-    private boolean checkExpertiseUtil(int lvlRequired) {
+    private boolean blackMarketTweaks$checkExpertiseUtil(int lvlRequired) {
         List<TieredSkill> skills = ClientExpertiseData.getLearnedTalentNodes();
 
         for (TieredSkill skill : skills) {

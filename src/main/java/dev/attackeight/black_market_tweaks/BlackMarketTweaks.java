@@ -1,17 +1,11 @@
 package dev.attackeight.black_market_tweaks;
 
 import com.mojang.logging.LogUtils;
-import iskallia.vault.VaultMod;
-import iskallia.vault.client.atlas.TextureAtlasRegion;
-import iskallia.vault.init.ModTextureAtlases;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ItemLike;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig.Type;
-import org.lwjgl.system.CallbackI;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
