@@ -26,6 +26,7 @@ import iskallia.vault.item.ItemShardPouch;
 import iskallia.vault.network.message.ServerboundResetBlackMarketTradesMessage;
 import iskallia.vault.skill.base.TieredSkill;
 import iskallia.vault.skill.expertise.type.BlackMarketExpertise;
+import iskallia.vault.util.LegendaryScreenParticle;
 import iskallia.vault.util.ScreenParticle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.*;
@@ -58,9 +59,9 @@ public abstract class ShardTradeScreenMixin extends AbstractElementContainerScre
         super(container, inventory, title, elementRenderer, tooltipRendererFactory);
     }
 
-    @Shadow protected ScreenParticle screenParticleLeft;
+    @Shadow protected LegendaryScreenParticle screenParticleLeft;
 
-    @Shadow protected ScreenParticle screenParticleRight;
+    @Shadow protected LegendaryScreenParticle screenParticleRight;
 
     @Unique protected ScreenParticle bmt$screenParticleLeft;
 
@@ -109,8 +110,8 @@ public abstract class ShardTradeScreenMixin extends AbstractElementContainerScre
 
         this.elementStore.removeAllElements();
 
-        this.screenParticleLeft = (new ScreenParticle()).angleRange(150.0F, 210.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(leftPos + 76, topPos + 76).spawnedWidthHeight(0, 28);
-        this.screenParticleRight = (new ScreenParticle()).angleRange(-30.0F, 30.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(leftPos + 77 + 90, topPos + 76).spawnedWidthHeight(0, 28);
+        this.screenParticleLeft = (new LegendaryScreenParticle()).angleRange(150.0F, 210.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(leftPos + 76, topPos + 76).spawnedWidthHeight(0, 28);
+        this.screenParticleRight = (new LegendaryScreenParticle()).angleRange(-30.0F, 30.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(leftPos + 77 + 90, topPos + 76).spawnedWidthHeight(0, 28);
 
         this.bmt$screenParticleLeft = (new ScreenParticle()).angleRange(150.0F, 210.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(leftPos + 76, topPos + 76).spawnedWidthHeight(0, 28);
         this.bmt$screenParticleRight = (new ScreenParticle()).angleRange(-30.0F, 30.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(leftPos + 77 + 90, topPos + 76).spawnedWidthHeight(0, 28);
