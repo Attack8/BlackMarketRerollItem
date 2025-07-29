@@ -1,6 +1,8 @@
 package dev.attackeight.black_market_tweaks.mixin;
 
 import dev.attackeight.black_market_tweaks.BlackMarketTweaks;
+import dev.attackeight.black_market_tweaks.init.ModConfig;
+import dev.attackeight.black_market_tweaks.extension.BlackMarketInventory;
 import iskallia.vault.block.entity.BlackMarketTileEntity;
 import iskallia.vault.container.oversized.OverSizedInventory;
 import iskallia.vault.network.message.ServerboundResetBlackMarketTradesMessage;
@@ -23,18 +25,16 @@ public class ServerboundResetBlackMarketTradesMessageMixin {
         NetworkEvent.Context context = contextSupplier.get();
         context.enqueueWork(() -> {
             ServerPlayer serverPlayer = context.getSender();
-            if (serverPlayer != null) {
-                BlockEntity be = serverPlayer.level.getBlockEntity(BlackMarketTweaks.getLastClickedPos(serverPlayer.getUUID()));
-                if (be instanceof BlackMarketTileEntity) {
-                    try {
-                        OverSizedInventory container = (OverSizedInventory) be.getClass().getDeclaredField("inventory").get(be);
-                        ItemStack pearl = container.getItem(0);
-                        pearl.shrink(1);
-                        container.setItem(0, pearl);
-                    } catch (Exception e) {
-                        BlackMarketTweaks.LOGGER.error(e.toString());
-                    }
-                }
+            if (serverPlayer == null) {
+                return;
+            }
+
+            BlockEntity blockEntity = serverPlayer.level.getBlockEntity(BlackMarketTweaks.getLastClickedPos(serverPlayer.getUUID()));
+            if (blockEntity instanceof BlackMarketTileEntity) {
+                OverSizedInventory container = ((BlackMarketInventory) blockEntity).bmt$get();
+                ItemStack reRollItem = container.getItem(0);
+                reRollItem.shrink(ModConfig.COST.get());
+                container.setItem(0, reRollItem);
             }
         });
     }

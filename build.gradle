@@ -21,7 +21,7 @@ apply plugin: 'org.spongepowered.mixin'
 
 version = "${mod_version}"
 group = "dev.attackeight.${mod_id}"
-archivesBaseName = "${mod_id}"
+archivesBaseName = "${mod_name}"
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 

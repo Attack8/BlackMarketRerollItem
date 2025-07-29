@@ -1,20 +1,20 @@
 package dev.attackeight.black_market_tweaks.mixin;
 
-import com.google.common.collect.Sets;
 import dev.attackeight.black_market_tweaks.BlackMarketTweaks;
-import dev.attackeight.black_market_tweaks.ModConfig;
-import iskallia.vault.block.entity.BlackMarketTileEntity;
+import dev.attackeight.black_market_tweaks.extension.BlackMarketInventory;
+import dev.attackeight.black_market_tweaks.init.ModConfig;
 import iskallia.vault.container.inventory.ShardTradeContainer;
+import iskallia.vault.container.oversized.OverSizedContainerSynchronizer;
 import iskallia.vault.container.oversized.OverSizedTabSlot;
 import iskallia.vault.container.spi.AbstractElementContainer;
 import iskallia.vault.init.ModContainers;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerSynchronizer;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -28,6 +28,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nullable;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -35,17 +36,11 @@ import static iskallia.vault.container.oversized.OverSizedSlotContainer.canAddIt
 
 @Mixin(value = ShardTradeContainer.class, remap = false)
 public abstract class ShardTradeContainerMixin extends AbstractElementContainer {
+    @Unique private final Set<Slot> dragSlots = new HashSet<>();
+    @Unique private int dragMode = -1;
+    @Unique private int dragEvent;
 
-    @Unique
-    private int dragMode = -1;
-
-    @Unique
-    private int dragEvent;
-
-    @Unique
-    private final Set<Slot> dragSlots = Sets.newHashSet();
-
-    public ShardTradeContainerMixin(int id, Inventory inventory) {
+    private ShardTradeContainerMixin(int id, Inventory inventory) {
         super(ModContainers.SHARD_TRADE_CONTAINER, id, inventory.player);
     }
 
@@ -55,68 +50,66 @@ public abstract class ShardTradeContainerMixin extends AbstractElementContainer 
     }
 
     @Inject(method = "initSlots", at = @At("TAIL"))
-    private void addRerollSlot(Inventory playerInventory, CallbackInfo ci) {
-
+    private void addReRollSlot(Inventory playerInventory, CallbackInfo ci) {
         BlockPos lookingPos = BlackMarketTweaks.getLastClickedPos(playerInventory.player.getUUID());
         BlockEntity be = playerInventory.player.level.getBlockEntity(lookingPos);
 
-        if (be instanceof BlackMarketTileEntity blackMarketTile) {
-            try {
-                Object o = blackMarketTile.getClass().getDeclaredField("inventory").get(blackMarketTile);
-                if (o instanceof Container invContainer) {
-                    this.addSlot((new OverSizedTabSlot(invContainer, 0, -21, 85)).setFilter((stack) ->
-                        stack.getItem().getRegistryName().equals(ResourceLocation.tryParse(ModConfig.ITEM.get()))));
-                }
-            } catch (Exception e) {
-                BlackMarketTweaks.LOGGER.error(e.toString());
-            }
-
+        if (be instanceof BlackMarketInventory inventory) {
+            this.addSlot(new OverSizedTabSlot(inventory.bmt$get(), 0, -21, 85)
+                    .setFilter(stack -> ModConfig.ITEM.get().equals(String.valueOf(stack.getItem().getRegistryName()))));
         }
     }
 
+    // Copied from OverSizedSlotContainer, Ideally ShardTradeContainer should extend it, but we cannot do that with a mixin
+
+    @Override
+    public boolean moveItemStackTo(@NotNull ItemStack stack, int startIndex, int endIndex, boolean reverseDirection) {
+        return this.moveOverSizedItemStackTo(stack, (Slot)null, startIndex, endIndex, reverseDirection);
+    }
+
     @Inject(method = "quickMoveStack", at = @At(value = "HEAD"), cancellable = true, remap = true)
-    private void quickMoveMoreStacks(Player player, int index, CallbackInfoReturnable<ItemStack> cir) {
-        ItemStack itemstack = ItemStack.EMPTY;
+    private void quickMoveStack(Player player, int index, CallbackInfoReturnable<ItemStack> cir) {
         Slot slot = this.slots.get(index);
-        if (slot.hasItem()) {
-            ItemStack slotStack = slot.getItem();
-            itemstack = slotStack.copy();
-            if (index >= 0 && index < 36 && this.moveOverSizedItemStackTo(slotStack, slot, 36, this.slots.size(), false)) {
-                cir.setReturnValue(itemstack);
-                return;
-            }
-
-            if (index >= 0 && index < 27) {
-                if (!this.moveOverSizedItemStackTo(slotStack, slot, 27, 36, false)) {
-                    cir.setReturnValue(ItemStack.EMPTY);
-                    return;
-                }
-            } else if (index >= 27 && index < 36) {
-                if (!this.moveOverSizedItemStackTo(slotStack, slot, 0, 27, false)) {
-                    cir.setReturnValue(ItemStack.EMPTY);
-                    return;
-                }
-            } else if (!this.moveOverSizedItemStackTo(slotStack, slot, 0, 36, false)) {
-                cir.setReturnValue(ItemStack.EMPTY);
-                return;
-            }
-
-            if (slotStack.getCount() == 0) {
-                slot.set(ItemStack.EMPTY);
-            } else {
-                slot.setChanged();
-            }
-
-            if (slotStack.getCount() == itemstack.getCount()) {
-                cir.setReturnValue(ItemStack.EMPTY);
-                return;
-            }
-
-            slot.onTake(player, slotStack);
+        if (!slot.hasItem()) {
+            cir.setReturnValue(ItemStack.EMPTY);
+            return;
         }
 
-        cir.setReturnValue(itemstack);
-        cir.cancel();
+        ItemStack slotStack = slot.getItem();
+        ItemStack itemStack = slotStack.copy();
+        if (index >= 0 && index < 36 && this.moveOverSizedItemStackTo(slotStack, slot, 36, this.slots.size(), false)) {
+            cir.setReturnValue(itemStack);
+            return;
+        }
+
+        if (index >= 0 && index < 27) {
+            if (!this.moveOverSizedItemStackTo(slotStack, slot, 27, 36, false)) {
+                cir.setReturnValue(ItemStack.EMPTY);
+                return;
+            }
+        } else if (index >= 27 && index < 36) {
+            if (!this.moveOverSizedItemStackTo(slotStack, slot, 0, 27, false)) {
+                cir.setReturnValue(ItemStack.EMPTY);
+                return;
+            }
+        } else if (!this.moveOverSizedItemStackTo(slotStack, slot, 0, 36, false)) {
+            cir.setReturnValue(ItemStack.EMPTY);
+            return;
+        }
+
+        if (slotStack.getCount() == 0) {
+            slot.set(ItemStack.EMPTY);
+        } else {
+            slot.setChanged();
+        }
+
+        if (slotStack.getCount() == itemStack.getCount()) {
+            cir.setReturnValue(ItemStack.EMPTY);
+            return;
+        }
+
+        slot.onTake(player, slotStack);
+        cir.setReturnValue(itemStack);
     }
 
     @Unique
@@ -208,7 +201,6 @@ public abstract class ShardTradeContainerMixin extends AbstractElementContainer 
         return flag;
     }
 
-    @Unique
     @Override
     public void clicked(int slotId, int dragType, @NotNull ClickType clickTypeIn, @NotNull Player player) {
         ItemStack slotStack;
@@ -217,13 +209,13 @@ public abstract class ShardTradeContainerMixin extends AbstractElementContainer 
         int k1;
         if (clickTypeIn == ClickType.QUICK_CRAFT) {
             int j1 = this.dragEvent;
-            this.dragEvent = AbstractContainerMenu.getQuickcraftHeader(dragType);
+            this.dragEvent = getQuickcraftHeader(dragType);
             if ((j1 != 1 || this.dragEvent != 2) && j1 != this.dragEvent) {
                 this.resetQuickCraft();
             } else if (this.getCarried().isEmpty()) {
                 this.resetQuickCraft();
             } else if (this.dragEvent == 0) {
-                this.dragMode = AbstractContainerMenu.getQuickcraftType(dragType);
+                this.dragMode = getQuickcraftType(dragType);
                 if (isValidQuickcraftType(this.dragMode, player)) {
                     this.dragEvent = 1;
                     this.dragSlots.clear();
@@ -425,10 +417,18 @@ public abstract class ShardTradeContainerMixin extends AbstractElementContainer 
         }
     }
 
-    @Unique
     @Override
     protected void resetQuickCraft() {
         this.dragEvent = 0;
         this.dragSlots.clear();
+    }
+
+    @Override
+    public void setSynchronizer(@NotNull ContainerSynchronizer sync) {
+        if (this.getPlayer() instanceof ServerPlayer sPlayer) {
+            super.setSynchronizer(new OverSizedContainerSynchronizer(sync, sPlayer));
+        } else {
+            super.setSynchronizer(sync);
+        }
     }
 }
