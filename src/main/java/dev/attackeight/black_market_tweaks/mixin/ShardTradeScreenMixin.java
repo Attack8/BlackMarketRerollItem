@@ -258,23 +258,27 @@ public abstract class ShardTradeScreenMixin extends AbstractElementContainerScre
         this.renderSlotItems(poseStack, mouseX, mouseY, partialTick);
         this.renderDebug(poseStack);
 
-        this.dt += partialTick;
-        for(; this.dt >= 0.5F; this.dt -= 0.5F) {
-            for (int i = 0; i < this.bmt$particles.length / 2; i++) {
-                LateInitLegendaryParticle left = this.bmt$particles[i];
-                LateInitLegendaryParticle right = this.bmt$particles[i + 2];
-                left.init(this).tick();
-                right.init(this).tick();
+        for (int i = 0; i < this.bmt$particles.length / 2; i++) {
+            LateInitLegendaryParticle left = this.bmt$particles[i];
+            LateInitLegendaryParticle right = this.bmt$particles[i + 2];
+            left.init(this);
+            right.init(this);
 
+            this.dt += partialTick;
+            for(; this.dt >= 0.5F; this.dt -= 0.5F) {
+                left.tick();
+                right.tick();
                 int trade = (i + 1) * 3;
                 if (ClientShardTradeData.getTradeInfo(trade - 1) != null) {
                     left.pop();
                     right.pop();
                 }
-                left.render(poseStack, partialTick);
-                right.render(poseStack, partialTick);
             }
+
+            left.render(poseStack, partialTick);
+            right.render(poseStack, partialTick);
         }
+
 
         this.renderTooltips(poseStack, mouseX, mouseY);
         ci.cancel();
