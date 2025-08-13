@@ -24,7 +24,6 @@ import iskallia.vault.container.inventory.ShardTradeContainer;
 import iskallia.vault.init.ModItems;
 import iskallia.vault.init.ModNetwork;
 import iskallia.vault.init.ModSounds;
-import iskallia.vault.item.BoosterPackItem;
 import iskallia.vault.item.ItemShardPouch;
 import iskallia.vault.network.message.ServerboundResetBlackMarketTradesMessage;
 import iskallia.vault.skill.base.TieredSkill;
@@ -122,6 +121,8 @@ public abstract class ShardTradeScreenMixin extends AbstractElementContainerScre
                             ? new TextComponent("Rolls Left: " + numOfRollsLeft)
                             : new TextComponent("Put an item in the re-roll slot to re-roll");
                 })
+                .layout(this::bmt$translateToGui));
+        this.addElement(new TextureAtlasElement<>(Spatials.positionXY(-26, 80), ModTextures.BLACK_MARKET_REROLL_ORNAMENT)
                 .layout(this::bmt$translateToGui));
 
         // Soul Shard Count

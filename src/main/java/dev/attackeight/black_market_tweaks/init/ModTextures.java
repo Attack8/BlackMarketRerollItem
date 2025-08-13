@@ -1,5 +1,6 @@
 package dev.attackeight.black_market_tweaks.init;
 
+import dev.attackeight.black_market_tweaks.BlackMarketTweaks;
 import iskallia.vault.client.atlas.TextureAtlasRegion;
 import iskallia.vault.init.ModTextureAtlases;
 

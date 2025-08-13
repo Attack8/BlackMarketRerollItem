@@ -46,7 +46,7 @@ public class ServerboundResetBlackMarketTradesMessageMixin {
 
                         boolean skip = new Random().nextFloat(0, 1) <= chance;
 
-                        OverSizedInventory container = ((BlackMarketInventory) blockEntity).bmt$get();
+                        OverSizedInventory container = ((BlackMarketInventory) be).bmt$get();
                         ItemStack pearl = container.getItem(0);
                         pearl.shrink(skip ? 0 : ModConfig.COST.get());
                         container.setItem(0, pearl);
