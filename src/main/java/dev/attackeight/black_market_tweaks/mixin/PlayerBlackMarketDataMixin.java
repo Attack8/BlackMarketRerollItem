@@ -3,7 +3,11 @@ package dev.attackeight.black_market_tweaks.mixin;
 import iskallia.vault.config.OmegaSoulShardConfig;
 import iskallia.vault.config.SoulShardConfig;
 import iskallia.vault.init.ModConfigs;
+import iskallia.vault.skill.base.Skill;
+import iskallia.vault.skill.prestige.BlackMarketRerollsPrestigePowerPower;
+import iskallia.vault.skill.tree.PrestigeTree;
 import iskallia.vault.world.data.PlayerBlackMarketData;
+import iskallia.vault.world.data.PlayerPrestigePowersData;
 import iskallia.vault.world.data.PlayerVaultStatsData;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -58,9 +62,17 @@ public abstract class PlayerBlackMarketDataMixin {
         }
 
         OmegaSoulShardConfig.Trades omegaTrades = null;
+        PrestigeTree prestige = PlayerPrestigePowersData.get(ServerLifecycleHooks.getCurrentServer()).getPowers(uuid);
+        boolean hasPrestige = !prestige.getAll(BlackMarketRerollsPrestigePowerPower.class, Skill::isUnlocked).isEmpty();
         for (OmegaSoulShardConfig.Trades trades : ModConfigs.OMEGA_SOUL_SHARD.getTrades()) {
-            if (playerLevel >= trades.getMinLevel() && (omegaTrades == null || omegaTrades.getMinLevel() < trades.getMinLevel())) {
-                omegaTrades = trades;
+            if (hasPrestige) {
+                if (trades.getMinLevel() >= 101 && (omegaTrades == null || trades.getMinLevel() > omegaTrades.getMinLevel())) {
+                    omegaTrades = trades;
+                }
+            } else {
+                if (playerLevel >= trades.getMinLevel() && (omegaTrades == null || omegaTrades.getMinLevel() < trades.getMinLevel())) {
+                    omegaTrades = trades;
+                }
             }
         }
         if (omegaTrades != null) {
