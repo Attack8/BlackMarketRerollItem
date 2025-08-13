@@ -1,6 +1,8 @@
 package dev.attackeight.black_market_tweaks.mixin;
 
 import dev.attackeight.black_market_tweaks.BlackMarketTweaks;
+import dev.attackeight.black_market_tweaks.init.ModConfig;
+import dev.attackeight.black_market_tweaks.extension.BlackMarketInventory;
 import iskallia.vault.block.entity.BlackMarketTileEntity;
 import iskallia.vault.container.oversized.OverSizedInventory;
 import iskallia.vault.network.message.ServerboundResetBlackMarketTradesMessage;
@@ -44,9 +46,9 @@ public class ServerboundResetBlackMarketTradesMessageMixin {
 
                         boolean skip = new Random().nextFloat(0, 1) <= chance;
 
-                        OverSizedInventory container = (OverSizedInventory) be.getClass().getDeclaredField("inventory").get(be);
+                        OverSizedInventory container = ((BlackMarketInventory) blockEntity).bmt$get();
                         ItemStack pearl = container.getItem(0);
-                        pearl.shrink(skip ? 0 : 1);
+                        pearl.shrink(skip ? 0 : ModConfig.COST.get());
                         container.setItem(0, pearl);
                         playerMarket.resetTradesWithoutTimer(context.getSender());
                     } catch (Exception e) {

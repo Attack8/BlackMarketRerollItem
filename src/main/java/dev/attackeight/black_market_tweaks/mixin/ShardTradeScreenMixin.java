@@ -1,20 +1,22 @@
 package dev.attackeight.black_market_tweaks.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import dev.attackeight.black_market_tweaks.BlackMarketTweaks;
-import dev.attackeight.black_market_tweaks.CountDownElement;
-import dev.attackeight.black_market_tweaks.TextureDefinitions;
+import dev.attackeight.black_market_tweaks.gui.CountDownElement;
+import dev.attackeight.black_market_tweaks.gui.LateInitLegendaryParticle;
+import dev.attackeight.black_market_tweaks.init.ModConfig;
+import dev.attackeight.black_market_tweaks.init.ModTextures;
 import iskallia.vault.client.ClientExpertiseData;
 import iskallia.vault.client.ClientShardTradeData;
 import iskallia.vault.client.gui.framework.ScreenTextures;
 import iskallia.vault.client.gui.framework.element.*;
 import iskallia.vault.client.gui.framework.render.TooltipDirection;
-import iskallia.vault.client.gui.framework.render.Tooltips;
 import iskallia.vault.client.gui.framework.render.spi.IElementRenderer;
 import iskallia.vault.client.gui.framework.render.spi.ITooltipRendererFactory;
 import iskallia.vault.client.gui.framework.screen.AbstractElementContainerScreen;
 import iskallia.vault.client.gui.framework.spatial.Spatials;
 import iskallia.vault.client.gui.framework.spatial.spi.IMutableSpatial;
+import iskallia.vault.client.gui.framework.spatial.spi.ISize;
+import iskallia.vault.client.gui.framework.spatial.spi.ISpatial;
 import iskallia.vault.client.gui.framework.text.LabelTextStyle;
 import iskallia.vault.client.gui.framework.text.TextBorder;
 import iskallia.vault.client.gui.screen.ShardTradeScreen;
@@ -22,13 +24,12 @@ import iskallia.vault.container.inventory.ShardTradeContainer;
 import iskallia.vault.init.ModItems;
 import iskallia.vault.init.ModNetwork;
 import iskallia.vault.init.ModSounds;
+import iskallia.vault.item.BoosterPackItem;
 import iskallia.vault.item.ItemShardPouch;
 import iskallia.vault.network.message.ServerboundResetBlackMarketTradesMessage;
 import iskallia.vault.skill.base.TieredSkill;
 import iskallia.vault.skill.expertise.type.BlackMarketExpertise;
 import iskallia.vault.util.LegendaryScreenParticle;
-import iskallia.vault.util.ScreenParticle;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.*;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Tuple;
@@ -41,338 +42,226 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Objects;
+import java.text.NumberFormat;
+import java.util.Locale;
 
-@Mixin(value = ShardTradeScreen.class, remap = false)
+@Mixin(value = ShardTradeScreen.class, priority = 1, remap = false)
 public abstract class ShardTradeScreenMixin extends AbstractElementContainerScreen<ShardTradeContainer> {
-
-    public ShardTradeScreenMixin(ShardTradeContainer container, Inventory inventory, Component title, IElementRenderer elementRenderer, ITooltipRendererFactory tooltipRendererFactory) {
-        super(container, inventory, title, elementRenderer, tooltipRendererFactory);
+    @Unique private static final int[] bmt$PARTICLE_COLORS = { -8185907, -9037875, -9758771, -10545203, -11397171 };
+    @Unique private static final Style bmt$TITLE_TEXT = Style.EMPTY.withColor(-12632257);
+    @Unique private static final Style bmt$ENABLED_TEXT = Style.EMPTY.withColor(16777215);
+    @Unique private static final Style bmt$DISABLED_TEXT = Style.EMPTY.withColor(8257536);
+    @Unique private static final NumberFormat bmt$NUMBER_FORMAT = NumberFormat.getCompactNumberInstance(Locale.US, NumberFormat.Style.SHORT);
+    @Unique private static final Component RESET_TIME = new TextComponent("00:00:00");
+    static {
+        bmt$NUMBER_FORMAT.setMaximumFractionDigits(1);
     }
 
+    @Shadow @Mutable @Final private LabelElement<?> labelRandomTrade;
     @Shadow protected LegendaryScreenParticle screenParticleLeft;
-
     @Shadow protected LegendaryScreenParticle screenParticleRight;
-
-    @Unique protected ScreenParticle bmt$screenParticleLeft;
-
-    @Unique protected ScreenParticle bmt$screenParticleRight;
-
     @Shadow private ButtonElement<?> omegaButton;
 
-    @Shadow protected abstract boolean canBuyTrade(int tradeIndex);
-
-    @Shadow protected abstract void buyTrade(int tradeIndex);
-
-    @Shadow protected abstract void updateTradeLabels();
-
-    @Shadow protected abstract boolean canBuyRandomTrade();
-
-    @Shadow protected abstract void buyRandomTrade();
-
-    @Shadow @Final private LabelElement<?> labelRandomTrade;
-
-    @Shadow @Final private LabelElement<?>[] labelShopTrades;
-
-    @Unique protected LabelElement<?> blackMarketTweaks$soulShardCount;
+    @Shadow @Mutable @Final private LabelElement<?>[] labelShopTrades;
+    @Unique private LateInitLegendaryParticle[] bmt$particles;
+    @Unique private ButtonElement<?>[] bmt$omegaButtons;
+    @Unique protected LabelElement<?> bmt$soulShardCount;
 
     @Shadow private float dt;
 
-    @SuppressWarnings({"RawUseOfParameterized", "unchecked"})
-    @Inject(method = "<init>", at = @At(value = "RETURN"), cancellable = true)
-    private void allowSixTrades(ShardTradeContainer container, Inventory inventory, Component title, CallbackInfo ci) {
+    private ShardTradeScreenMixin(ShardTradeContainer container, Inventory inventory, Component title, IElementRenderer elementRenderer, ITooltipRendererFactory<AbstractElementContainerScreen<ShardTradeContainer>> tooltipRendererFactory) {
+        super(container, inventory, title, elementRenderer, tooltipRendererFactory);
+    }
 
-        Field labelShopTradesReflection = null;
-        Field labelRandomTradeReflection = null;
-
-        try {
-            labelShopTradesReflection = ((ShardTradeScreen) (Object) this).getClass().getDeclaredField("labelShopTrades");
-            labelShopTradesReflection.setAccessible(true);
-            labelShopTradesReflection.set(this, new LabelElement[6]);
-            labelRandomTradeReflection = ((ShardTradeScreen) (Object) this).getClass().getDeclaredField("labelRandomTrade");
-            labelRandomTradeReflection.setAccessible(true);
-        } catch (Exception exception) {
-            BlackMarketTweaks.LOGGER.error("Exception thrown while tweaking black market: ", exception);
-        }
-
-        if (labelShopTradesReflection == null || labelRandomTradeReflection == null) {
-            ci.cancel();
-        }
-
+    @Inject(method = "<init>", at = @At(value = "RETURN"))
+    private void init(ShardTradeContainer container, Inventory inventory, Component title, CallbackInfo ci) {
         this.elementStore.removeAllElements();
+        this.labelShopTrades = new LabelElement[6];
+        this.bmt$particles = new LateInitLegendaryParticle[] {
+                bmt$createParticle(27, 74, 150.0F, 210.0F),
+                bmt$createParticle(77 + 55, 74, 150.0F, 210.0F),
+                bmt$createParticle(27 + 90, 74, -30.0F, 30.0F),
+                bmt$createParticle(77 + 55 + 90, 74, -30.0F, 30.0F)
+        };
+        this.bmt$omegaButtons = new ButtonElement[2];
 
-        this.screenParticleLeft = (new LegendaryScreenParticle()).angleRange(150.0F, 210.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(leftPos + 76, topPos + 76).spawnedWidthHeight(0, 28);
-        this.screenParticleRight = (new LegendaryScreenParticle()).angleRange(-30.0F, 30.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(leftPos + 77 + 90, topPos + 76).spawnedWidthHeight(0, 28);
+        ISpatial guiSpatial = this.getGuiSpatial();
 
-        this.bmt$screenParticleLeft = (new LegendaryScreenParticle()).angleRange(150.0F, 210.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(leftPos + 76, topPos + 76).spawnedWidthHeight(0, 28);
-        this.bmt$screenParticleRight = (new LegendaryScreenParticle()).angleRange(-30.0F, 30.0F).quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F).spawnedPosition(leftPos + 77 + 90, topPos + 76).spawnedWidthHeight(0, 28);
-
-        this.addElement((new TextureAtlasElement(this.getGuiSpatial(), TextureDefinitions.BLACK_MARKET_BACKGROUND))
+        // Core Gui
+        this.addElement(new LabelElement<>(Spatials.positionXY(-47, 7), new TextComponent("Black Market").withStyle(bmt$TITLE_TEXT), LabelTextStyle.defaultStyle())
+                .layout(this::bmt$translateToGui));
+        this.addElement(new TextureAtlasElement<>(guiSpatial, ModTextures.BLACK_MARKET_BACKGROUND)
                 .layout((screen, gui, parent, world) -> world.translateXY(gui.left() - 55, gui.top()).size(Spatials.copy(gui))));
-        this.addElement((new SlotsElement((ShardTradeScreen) (Object) this))
-                .layout((screen, gui, parent, world) -> world.positionXY(gui)));
-        this.addElement((new LabelElement(Spatials.positionXY(-47, 7), (new TextComponent("Black Market")).withStyle(Style.EMPTY.withColor(-12632257)), LabelTextStyle.defaultStyle())).layout((screen, gui, parent, world) ->
-            world.translateXY(gui)));
-        MutableComponent inventoryName = inventory.getDisplayName().copy();
-        inventoryName.withStyle(Style.EMPTY.withColor(-12632257));
-        this.addElement((LabelElement)(new LabelElement(Spatials.positionXY(8, 110), inventoryName, LabelTextStyle.defaultStyle()))
-                .layout((screen, gui, parent, world) -> world.translateXY(gui)));
-        this.addElement((new TextureAtlasElement(Spatials.positionXY(-37, 18), ScreenTextures.SOUL_SHARD_TRADE_ORNAMENT))
-                .layout((screen, gui, parent, world) -> world.translateXY(gui)));
-        this.addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(-21, 32),
-                () -> new ItemStack(ModItems.UNKNOWN_ITEM), () -> !this.canBuyRandomTrade()))
-                .layout((screen, gui, parent, world) -> world.translateXY(gui)))
+        this.addElement(new SlotsElement<>(this).layout(this::bmt$translateToGui));
+
+        // Reset Timer
+        int countdownWidth = ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width();
+        int countdownHeight = ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height();
+        int resetWidth = TextBorder.DEFAULT_FONT.get().width(RESET_TIME);
+        IMutableSpatial resetPosition = Spatials.positionXYZ(guiSpatial.width() / 2 - resetWidth / 2 - 11, -10, 200);
+        this.addElement(new CountDownElement(resetPosition, Spatials.size(resetWidth, 9)).layout(this::bmt$translateToGui));
+        this.addElement(new TextureAtlasElement<>(Spatials.positionXY(guiSpatial.width() / 2 - countdownWidth / 2 - 10, -countdownHeight), ScreenTextures.TAB_COUNTDOWN_BACKGROUND))
+                .tooltip(() -> new TextComponent("Shop resets in"))
+                .layout(this::bmt$translateToGui);
+        this.addElement((new ItemStackDisplayElement<>(Spatials.positionXY(guiSpatial.width() / 2 - countdownWidth - 37, -countdownHeight + 3), new ItemStack(ModItems.SOUL_SHARD)))
+                .layout(this::bmt$translateToGui)).setScale(0.8f);
+
+        // ReRoll
+        Slot rerollSlot = this.menu.slots.get(36);
+        this.addElement(new ButtonElement<>(
+                Spatials.positionXY( guiSpatial.width() / 2 - countdownWidth / 2 + 50, -countdownHeight),
+                ScreenTextures.BUTTON_RESET_TRADES_TEXTURES,
+                () -> {
+                    ModNetwork.CHANNEL.sendToServer(ServerboundResetBlackMarketTradesMessage.INSTANCE);
+                    this.menu.getPlayer().level.playSound(this.menu.getPlayer(), this.menu.getPlayer().getX(), this.menu.getPlayer().getY(), this.menu.getPlayer().getZ(), ModSounds.SKILL_TREE_LEARN_SFX, SoundSource.BLOCKS, 0.75F, 1.0F);
+                })
+                .setDisabled(() -> !rerollSlot.hasItem())
+                .tooltip(() -> {
+                    int numOfRollsLeft = rerollSlot.getItem().getCount();
+                    return numOfRollsLeft > 0
+                            ? new TextComponent("Rolls Left: " + numOfRollsLeft)
+                            : new TextComponent("Put an item in the re-roll slot to re-roll");
+                })
+                .layout(this::bmt$translateToGui));
+
+        // Soul Shard Count
+        this.addElement(new TextureAtlasElement<>(Spatials.positionXY(guiSpatial.width() / 2 - countdownWidth - 40, -countdownHeight), ScreenTextures.TAB_COUNTDOWN_BACKGROUND)
+                .tooltip(() -> new TextComponent("Number of Soul Shards in Inventory"))
+                .layout(this::bmt$translateToGui));
+        this.bmt$soulShardCount = this.addElement(new LabelElement<>(Spatials.positionXYZ(guiSpatial.width() / 2 - countdownWidth - 8, -countdownHeight + 5, 200), TextComponent.EMPTY, LabelTextStyle.shadow().center()))
+                .layout(this::bmt$translateToGui);
+
+        // Random Trade
+        labelRandomTrade = this.addElement(new LabelElement<>(Spatials.positionXYZ(-13, 64, 200), TextComponent.EMPTY, LabelTextStyle.border8().center()))
+                .layout(this::bmt$translateToGui);
+        this.addElement(new ItemStackDisplayElement<>(guiSpatial, new ItemStack(ModItems.SOUL_SHARD))
+                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() - 21, gui.top() + 54)));
+        this.addElement(new TextureAtlasElement<>(Spatials.positionXY(-37, 18), ScreenTextures.SOUL_SHARD_TRADE_ORNAMENT)
+                .layout(this::bmt$translateToGui));
+        this.addElement(new FakeItemSlotElement<>(Spatials.positionXY(-21, 34), () -> new ItemStack(ModItems.UNKNOWN_ITEM), () -> !this.canBuyRandomTrade())
                 .whenClicked(this::buyRandomTrade)
                 .tooltip((tooltipRenderer, poseStack, mouseX, mouseY, tooltipFlag) -> {
                     tooltipRenderer.renderTooltip(poseStack, new ItemStack(ModItems.UNKNOWN_ITEM), mouseX, mouseY, TooltipDirection.RIGHT);
                     return true;
-                });
-        this.addElement((new ItemStackDisplayElement(this.getGuiSpatial(), new ItemStack(ModItems.SOUL_SHARD)))
-                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() - 21, gui.top() + 54)));
-        try {
-            labelRandomTradeReflection.set(this, this.addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(-13, 64, 200), TextComponent.EMPTY, LabelTextStyle.border8().center()))
-                    .layout((screen, gui, parent, world) -> world.translateXYZ(gui))));
-        } catch (IllegalAccessException e) {
-            BlackMarketTweaks.LOGGER.error("Exception thrown while tweaking black market: ", e);
-        }
-        this.addElement((new TextureAtlasElement(this.getGuiSpatial(), TextureDefinitions.BLACK_MARKET_ORNAMENT))
-                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 24, gui.top() + 6)));
-        this.addElement((new TextureAtlasElement(this.getGuiSpatial(), ScreenTextures.OMEGA_BLACK_MARKET_ORNAMENT))
-                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 22, gui.top() + 70)));
-        this.addElement((new TextureAtlasElement(this.getGuiSpatial(), TextureDefinitions.BLACK_MARKET_ORNAMENT))
-                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 129, gui.top() + 6)));
-        this.addElement((new TextureAtlasElement(this.getGuiSpatial(), ScreenTextures.OMEGA_BLACK_MARKET_ORNAMENT))
-                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 127, gui.top() + 70)));
-        this.addElement((new TextureAtlasElement(this.getGuiSpatial(), TextureDefinitions.BLACK_MARKET_REROLL_ORNAMENT))
-                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() - 26, gui.top() + 80)));
+                })
+                .layout(this::bmt$translateToGui));
 
-        for(int i = 0; i < 2; ++i) {
-            int tradeIndex = i;
-            int yOffsetTrade = 10 + i * 33;
-            (this.addElement(((ButtonElement)(new ButtonElement(Spatials.positionXY(28, yOffsetTrade), ScreenTextures.BUTTON_TRADE_WIDE_TEXTURES, () -> {}))
-                    .layout((screen, gui, parent, world) -> world.translateXY(gui))).setDisabled(() -> !this.canBuyTrade(tradeIndex))))
-                    .setEnabled(false);
-            int yOffset = 14 + i * 33;
-            this.addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(91, yOffset), () -> {
-                Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(tradeIndex);
-                return trade == null ? ItemStack.EMPTY : trade.getA().copy();
-            }, () -> !this.canBuyTrade(tradeIndex)
-            )).setLabelStackCount().layout((screen, gui, parent, world) -> world.translateXY(gui)))
-            .whenClicked(() -> this.buyTrade(tradeIndex))
-            .tooltip((tooltipRenderer, poseStack, mouseX, mouseY, tooltipFlag) -> {
-                Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(tradeIndex);
-                if (trade != null && !trade.getA().isEmpty()) {
-                    tooltipRenderer.renderTooltip(poseStack, trade.getA(), mouseX, mouseY, TooltipDirection.RIGHT);
-                }
+        // Player Inventory
+        this.addElement(new LabelElement<>(Spatials.positionXY(8, 110), playerInventoryTitle, LabelTextStyle.defaultStyle())
+                .layout(this::bmt$translateToGui));
 
-                return true;
-            });
-            this.addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(this.getGuiSpatial(), new ItemStack(ModItems.SOUL_SHARD)))
-                    .layout((screen, gui, parent, world) -> world.translateXY(gui.left() + 39, gui.top() + yOffset)));
-            this.labelShopTrades[i] = (LabelElement)this.addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(47, yOffset + 10, 200), TextComponent.EMPTY, LabelTextStyle.border8().center()))
-                    .layout((screen, gui, parent, world) -> world.translateXYZ(gui)));
-        }
+        // Trades
+        for (int trade = 1; trade <= 6; ++trade) {
+            int index = trade - 1;
+            int xIndex = index < 3 ? 0 : 1;
+            int yIndex = index % 3;
+            boolean omega = yIndex == 2;
 
-        for(int i = 3; i < 5; ++i) {
-            int tradeIndex = i;
-            int yOffsetTrade = 10 + i * 33 - 99;
-            (this.addElement(((ButtonElement)(new ButtonElement(Spatials.positionXY(133, yOffsetTrade), ScreenTextures.BUTTON_TRADE_WIDE_TEXTURES, () -> {
-            })).layout((screen, gui, parent, world) -> world.translateXY(gui)))
-            .setDisabled(() -> !this.canBuyTrade(tradeIndex))
-            .tooltip(Tooltips.multi(() -> List.of(new TextComponent("Learn Marketer Expertise to Unlock"))))))
-            .setEnabled(!this.blackMarketTweaks$checkExpertiseUtil(tradeIndex - 2));
-            int yOffset = 14 + i * 33 - 99;
-            this.addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(196, yOffset), () -> {
-                Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(tradeIndex);
-                return trade == null ? ItemStack.EMPTY : trade.getA().copy();
-            }, () -> !this.canBuyTrade(tradeIndex)))
-            .setLabelStackCount().layout((screen, gui, parent, world) -> world.translateXY(gui)))
-            .whenClicked(() -> this.buyTrade(tradeIndex))
-            .tooltip((tooltipRenderer, poseStack, mouseX, mouseY, tooltipFlag) -> {
-                Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(tradeIndex);
-                if (trade != null && !trade.getA().isEmpty()) {
-                    tooltipRenderer.renderTooltip(poseStack, trade.getA(), mouseX, mouseY, TooltipDirection.RIGHT);
-                }
+            int xOffset = (index < 3 ? 0 : 105) - (omega ? 3 : 0);
+            int yOffset = yIndex * 33 - (omega ? 1 : 0);
 
-                return true;
-            });
-            this.addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(this.getGuiSpatial(), new ItemStack(ModItems.SOUL_SHARD)))
-                    .layout((screen, gui, parent, world) -> world.translateXY(gui.left() + 144, gui.top() + yOffset)));
-            this.labelShopTrades[i] = (LabelElement)this.addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(152, yOffset + 10, 200), TextComponent.EMPTY, LabelTextStyle.border8().center()))
-                    .layout((screen, gui, parent, world) -> world.translateXYZ(gui)));
-        }
-
-        int tradeIndex = 2;
-        int yOffsetTrade = 76;
-        (this.addElement(this.omegaButton = ((ButtonElement)(new ButtonElement(Spatials.positionXY(27, yOffsetTrade - 1), ScreenTextures.OMEGA_BUTTON_TRADE_WIDE_TEXTURES, () -> {}))
-        .layout((screen, gui, parent, world) -> world.translateXY(gui)))
-        .setDisabled(() -> !this.canBuyTrade(tradeIndex))))
-        .setEnabled(false);
-        int yOffset = 80;
-        this.addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(91, yOffset), () -> {
-            Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(tradeIndex);
-            return trade == null ? ItemStack.EMPTY : trade.getA().copy();
-        }, () -> !this.canBuyTrade(tradeIndex)))
-        .setLabelStackCount().layout((screen, gui, parent, world) -> world.translateXY(gui)))
-        .whenClicked(() -> {
-            this.buyTrade(tradeIndex);
-            this.screenParticleLeft.pop(4.0F, 20.0F);
-            this.screenParticleRight.pop(4.0F, 20.0F);
-        }).tooltip((tooltipRenderer, poseStack, mouseX, mouseY, tooltipFlag) -> {
-            Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(tradeIndex);
-            if (trade != null && !trade.getA().isEmpty()) {
-                tooltipRenderer.renderTooltip(poseStack, trade.getA(), mouseX, mouseY, TooltipDirection.RIGHT);
+            // Ornament
+            if (yIndex == 0) {
+                this.addElement((new TextureAtlasElement<>(guiSpatial, ModTextures.BLACK_MARKET_ORNAMENT))
+                        .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 24 + xOffset, gui.top() + 6)));
+            } else if (omega) {
+                this.addElement((new TextureAtlasElement<>(guiSpatial, ScreenTextures.OMEGA_BLACK_MARKET_ORNAMENT))
+                        .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 22 + xOffset, gui.top() + 70)));
             }
 
-            return true;
-        });
-        this.addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(this.getGuiSpatial(), new ItemStack(ModItems.SOUL_SHARD)))
-                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 39, gui.top() + yOffset)));
-        this.labelShopTrades[2] = (LabelElement)this.addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(47, yOffset + 10, 200), TextComponent.EMPTY, LabelTextStyle.border8().center()))
-                .layout((screen, gui, parent, world) -> world.translateXYZ(gui)));
-
-        int newTradeIndex = 5;
-        (this.addElement(this.omegaButton = (ButtonElement) ((ButtonElement)(new ButtonElement(Spatials.positionXY(132, yOffsetTrade - 1), ScreenTextures.OMEGA_BUTTON_TRADE_WIDE_TEXTURES, () -> {}))
-        .layout((screen, gui, parent, world) -> world.translateXY(gui)))
-        .setDisabled(() -> !this.canBuyTrade(newTradeIndex))
-        .tooltip(Tooltips.multi(() -> List.of(new TextComponent("Learn Marketer Expertise to Unlock"))))))
-        .setEnabled(!this.blackMarketTweaks$checkExpertiseUtil(newTradeIndex - 2));
-        this.addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(196, yOffset), () -> {
-            Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(newTradeIndex);
-            return trade == null ? ItemStack.EMPTY : trade.getA().copy();
-        }, () -> !this.canBuyTrade(newTradeIndex)))
-        .setLabelStackCount().layout((screen, gui, parent, world) -> world.translateXY(gui)))
-        .whenClicked(() -> {
-            this.buyTrade(newTradeIndex);
-            this.bmt$screenParticleLeft.pop(4.0F, 20.0F);
-            this.bmt$screenParticleRight.pop(4.0F, 20.0F);
-        }).tooltip((tooltipRenderer, poseStack, mouseX, mouseY, tooltipFlag) -> {
-            Tuple<ItemStack, Integer> trade = ClientShardTradeData.getTradeInfo(newTradeIndex);
-            if (trade != null && !trade.getA().isEmpty()) {
-                tooltipRenderer.renderTooltip(poseStack, trade.getA(), mouseX, mouseY, TooltipDirection.RIGHT);
+            // Background Button
+            ButtonElement<?> button = this.addElement(new ButtonElement<>(
+                    Spatials.positionXY(28 + xOffset, 10 + yOffset),
+                    omega ? ScreenTextures.OMEGA_BUTTON_TRADE_WIDE_TEXTURES : ScreenTextures.BUTTON_TRADE_WIDE_TEXTURES,
+                    () -> {}
+            ));
+            button.setDisabled(() -> !this.canBuyTrade(index));
+            button.tooltip(() -> new TextComponent("Learn Marketer Expertise to Unlock"));
+            button.layout(this::bmt$translateToGui);
+            button.setEnabled(!this.bmt$hasTrade(trade));
+            if (omega) {
+                this.bmt$omegaButtons[xIndex] = button;
             }
 
-            return true;
-        });
-        this.addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(this.getGuiSpatial(), new ItemStack(ModItems.SOUL_SHARD)))
-                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 144, gui.top() + yOffset)));
-        this.labelShopTrades[5] = (LabelElement)this.addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(152, yOffset + 10, 200), TextComponent.EMPTY, LabelTextStyle.border8().center()))
-                .layout((screen, gui, parent, world) -> world.translateXYZ(gui)));
+            // Trade Cost Label
+            this.addElement((new ItemStackDisplayElement<>(guiSpatial, new ItemStack(ModItems.SOUL_SHARD)))
+                    .layout((screen, gui, parent, world) -> world.translateXY(gui.left() + 39 + xOffset, gui.top() + 14 + yOffset)));
+            this.labelShopTrades[index] = this.addElement(new LabelElement<>(Spatials.positionXYZ(47 + xOffset, 14 + yOffset + 10, 200), TextComponent.EMPTY, LabelTextStyle.border8().center()))
+                    .layout(this::bmt$translateToGui);
 
-        LocalDateTime endTime = ClientShardTradeData.getNextReset();
-        LocalDateTime nowTime = LocalDateTime.now(ZoneId.of("UTC")).withNano(0);
-        LocalTime diff = LocalTime.MIN.plusSeconds(ChronoUnit.SECONDS.between(nowTime, endTime));
-        Component component = new TextComponent(diff.format(DateTimeFormatter.ISO_LOCAL_TIME));
-        IMutableSpatial var10003 = Spatials.positionXYZ(this.getGuiSpatial().width() / 2 - TextBorder.DEFAULT_FONT.get().width(component) / 2 - 11, -10, 200);
-        int var10004 = TextBorder.DEFAULT_FONT.get().width(component);
-        Objects.requireNonNull(TextBorder.DEFAULT_FONT.get());
-        this.addElement((new CountDownElement(var10003, Spatials.size(var10004, 9), () -> component,
-                LabelTextStyle.shadow())).layout((screen, gui, parent, world) -> world.translateXY(gui.x(), gui.y())));
-        this.addElement((TextureAtlasElement)((TextureAtlasElement<?>)(new TextureAtlasElement(Spatials.positionXY(this.getGuiSpatial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() / 2 - 10, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height()), ScreenTextures.TAB_COUNTDOWN_BACKGROUND))
-                .layout((screen, gui, parent, world) -> world.translateXY(gui)))
-                .tooltip(Tooltips.multi(() -> List.of(new TextComponent("Shop resets in")))));
-
-        Slot rerollSlot = this.menu.slots.get(36);
-        this.addElement((ButtonElement)((ButtonElement)(new ButtonElement(Spatials.positionXY( this.getGuiSpatial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() / 2 + 50, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height()), ScreenTextures.BUTTON_RESET_TRADES_TEXTURES, () -> {
-            ModNetwork.CHANNEL.sendToServer(ServerboundResetBlackMarketTradesMessage.INSTANCE);
-            this.menu.getPlayer().level.playSound(this.menu.getPlayer(), this.menu.getPlayer().getX(), this.menu.getPlayer().getY(), this.menu.getPlayer().getZ(), ModSounds.SKILL_TREE_LEARN_SFX, SoundSource.BLOCKS, 0.75F, 1.0F);
-        })).layout((screen, gui, parent, world) -> world.translateXY(gui)))
-            .setDisabled(() -> !rerollSlot.hasItem()
-        ).tooltip(Tooltips.multi(() -> {
-            int numOfRollsLeft = rerollSlot.getItem().getCount();
-
-            if (numOfRollsLeft > 0) {
-                return List.of(new TextComponent("Rolls Left: " + numOfRollsLeft));
-            } else {
-                return List.of(new TextComponent("Put an item in the re-roll slot to re-roll"));
-            }
-        })));
-
-        this.addElement(((new TextureAtlasElement(Spatials.positionXY(this.getGuiSpatial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() - 40, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height()), ScreenTextures.TAB_COUNTDOWN_BACKGROUND))
-                .layout((screen, gui, parent, world) -> world.translateXY(gui))).tooltip(Tooltips.multi(() -> List.of(new TextComponent("Number of Soul Shards in Inventory")))));
-        this.addElement((ItemStackDisplayElement)(new ItemStackDisplayElement(Spatials.positionXY(this.getGuiSpatial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() - 37, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height() + 3), new ItemStack(ModItems.SOUL_SHARD)))
-                .layout((screen, gui, parent, world) -> world.translateXY(gui))).setScale(0.8f);
-
-        this.blackMarketTweaks$soulShardCount = this.addElement((LabelElement)(new LabelElement(Spatials.positionXYZ(this.getGuiSpatial().width() / 2 - ScreenTextures.TAB_COUNTDOWN_BACKGROUND.width() - 8, -ScreenTextures.TAB_COUNTDOWN_BACKGROUND.height() + 5, 200), TextComponent.EMPTY, LabelTextStyle.shadow().center()))
-                .layout((screen, gui, parent, world) -> world.translateXYZ(gui)));
+            // Trade Item Slot
+            this.addElement(new FakeItemSlotElement<>(Spatials.positionXY(91 + xOffset, 14 + yOffset), () -> {
+                Tuple<ItemStack, Integer> info = ClientShardTradeData.getTradeInfo(index);
+                return info == null ? ItemStack.EMPTY : info.getA().copy();
+            }, () -> !this.canBuyTrade(index)))
+                    .setLabelStackCount()
+                    .whenClicked(() -> {
+                        if (omega) {
+                            bmt$particles[xIndex].pop(4, 20);
+                            bmt$particles[xIndex + 2].pop(4, 20);
+                        }
+                        this.buyTrade(index);
+                    })
+                    .tooltip((tooltipRenderer, poseStack, mouseX, mouseY, tooltipFlag) -> {
+                        Tuple<ItemStack, Integer> info = ClientShardTradeData.getTradeInfo(index);
+                        if (info != null && !info.getA().isEmpty()) {
+                            tooltipRenderer.renderTooltip(poseStack, info.getA(), mouseX, mouseY, TooltipDirection.RIGHT);
+                        }
+                        return true;
+                    })
+                    .layout(this::bmt$translateToGui);
+        }
 
         this.updateTradeLabels();
+
+        // Set Vanilla Fields
+        screenParticleLeft = bmt$particles[0];
+        screenParticleRight = bmt$particles[2];
+        omegaButton = bmt$omegaButtons[0];
     }
 
     @Inject(method = "updateTradeLabels", at = @At("HEAD"), cancellable = true)
-    private void allowMoreTradeLabels(CallbackInfo ci) {
-        int playerShards = ItemShardPouch.getShardCount(Minecraft.getInstance().player);
-        int randomCost = ClientShardTradeData.getRandomTradeCost();
-        LocalDateTime nextReset = ClientShardTradeData.getNextReset();
-        LocalDateTime now = LocalDateTime.now(ZoneId.of("UTC")).withNano(0);
-        LocalTime diff = LocalTime.MIN.plusSeconds(ChronoUnit.SECONDS.between(now, nextReset));
-        new TextComponent(diff.format(DateTimeFormatter.ISO_LOCAL_TIME));
-        int randomCostColor = playerShards >= randomCost ? 16777215 : 8257536;
-        Component randomCostComponent = (new TextComponent(String.valueOf(randomCost))).withStyle(Style.EMPTY.withColor(TextColor.fromRgb(randomCostColor)));
-        this.labelRandomTrade.set(randomCostComponent);
-        int length = labelShopTrades.length;
+    private void updateLabels(CallbackInfo ci) {
+        int playerShards = ItemShardPouch.getShardCount(menu.getPlayer());
+        bmt$setCostLabel(this.labelRandomTrade, playerShards, ClientShardTradeData.getRandomTradeCost());
 
-        for(int i = 0; i < length; ++i) {
+        for(int i = 0; i < labelShopTrades.length; ++i) {
             Tuple<ItemStack, Integer> tradeInfo = ClientShardTradeData.getTradeInfo(i);
             if (tradeInfo == null) {
                 this.labelShopTrades[i].set(TextComponent.EMPTY);
             } else {
-                int tradeCost = tradeInfo.getB();
-                int tradeCostColor = playerShards >= tradeCost ? 16777215 : 8257536;
-                Component tradeCostComponent = (new TextComponent(String.valueOf(tradeCost))).withStyle(Style.EMPTY.withColor(TextColor.fromRgb(tradeCostColor)));
-                this.labelShopTrades[i].set(tradeCostComponent);
+                bmt$setCostLabel(this.labelShopTrades[i], playerShards, tradeInfo.getB());
             }
         }
 
-        if (blackMarketTweaks$soulShardCount != null) {
-            char unit = ',';
-            double shardCount = playerShards;
-            if (playerShards >= 1000000) {
-                unit = 'M';
-                shardCount = shardCount / 1000000;
-            } else if (playerShards >= 1000) {
-                unit = 'k';
-                shardCount = shardCount / 1000;
-            }
-
-            BigDecimal bd = BigDecimal.valueOf(shardCount).setScale(1, RoundingMode.HALF_UP);
-            shardCount = bd.doubleValue();
-            TextComponent text = new TextComponent(String.valueOf(shardCount));
-            if (unit != ',') text.append(String.valueOf(unit));
-            this.blackMarketTweaks$soulShardCount.set(text);
+        if (bmt$soulShardCount != null) {
+            this.bmt$soulShardCount.set(bmt$NUMBER_FORMAT.format(playerShards));
         }
         ci.cancel();
     }
 
-    @Inject(method = "render", at = @At(value = "HEAD"), cancellable = true, remap = true)
-    private void addMoreParticles(PoseStack poseStack, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-        this.dt += partialTick;
-        this.screenParticleLeft.spawnedPosition(leftPos + 27, topPos + 74).spawnedWidthHeight(0, 29);
-        this.screenParticleRight.spawnedPosition(leftPos + 27 + 90, topPos + 74).spawnedWidthHeight(0, 29);
-        this.bmt$screenParticleLeft.spawnedPosition(leftPos + 77 + 55, topPos + 74).spawnedWidthHeight(0, 29);
-        this.bmt$screenParticleRight.spawnedPosition(leftPos + 77 + 90 + 55, topPos + 74).spawnedWidthHeight(0, 29);
+    @Unique
+    private void bmt$setCostLabel(LabelElement<?> label, int shards, int cost) {
+        label.set(new TextComponent(String.valueOf(cost)).withStyle(shards >= cost ? bmt$ENABLED_TEXT : bmt$DISABLED_TEXT));
+    }
 
+    @Inject(method = "render", at = @At(value = "HEAD"), cancellable = true, remap = true)
+    private void render(PoseStack poseStack, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+        this.dt += partialTick;
         for(; this.dt >= 0.5F; this.dt -= 0.5F) {
-            this.screenParticleLeft.tick();
-            this.screenParticleRight.tick();
-            this.bmt$screenParticleLeft.tick();
-            this.bmt$screenParticleRight.tick();
-            if (ClientShardTradeData.getAvailableTrades().containsKey(2)) {
-                this.screenParticleLeft.pop();
-                this.screenParticleRight.pop();
-            }
-            if (ClientShardTradeData.getAvailableTrades().containsKey(5)) {
-                this.bmt$screenParticleLeft.pop();
-                this.bmt$screenParticleRight.pop();
+            for (int i = 0; i < this.bmt$particles.length / 2; i++) {
+                LateInitLegendaryParticle left = this.bmt$particles[i];
+                LateInitLegendaryParticle right = this.bmt$particles[i + 2];
+                left.init(this).tick();
+                right.init(this).tick();
+
+                int trade = (i + 1) * 3;
+                if (ClientShardTradeData.getTradeInfo(trade - 1) != null) {
+                    left.pop();
+                    right.pop();
+                }
+                left.render(poseStack, partialTick);
+                right.render(poseStack, partialTick);
             }
         }
 
@@ -385,38 +274,51 @@ public abstract class ShardTradeScreenMixin extends AbstractElementContainerScre
         this.renderElements(poseStack, mouseX, mouseY, partialTick);
         this.renderSlotItems(poseStack, mouseX, mouseY, partialTick);
         this.renderDebug(poseStack);
-        this.screenParticleLeft.render(poseStack, partialTick);
-        this.screenParticleRight.render(poseStack, partialTick);
-        this.bmt$screenParticleLeft.render(poseStack, partialTick);
-        this.bmt$screenParticleRight.render(poseStack, partialTick);
         this.renderTooltips(poseStack, mouseX, mouseY);
         ci.cancel();
     }
 
     @Inject(method = "canBuyTrade", at = @At("HEAD"), cancellable = true)
-    private void checkExpertise(int tradeIndex, CallbackInfoReturnable<Boolean> cir) {
+    private void canBuyTrade(int tradeIndex, CallbackInfoReturnable<Boolean> cir) {
         Tuple<ItemStack, Integer> tradeInfo = ClientShardTradeData.getTradeInfo(tradeIndex);
-        if (tradeInfo == null) {
-            cir.setReturnValue(false);
-        } else {
-            cir.setReturnValue(ItemShardPouch.getShardCount(Minecraft.getInstance().player) >= tradeInfo.getB());
-            if (cir.getReturnValue() && tradeIndex >= 3) {
-                cir.setReturnValue(false);
-                int lvlRequired = tradeIndex - 2;
-                cir.setReturnValue(blackMarketTweaks$checkExpertiseUtil(lvlRequired));
-            }
-        }
+        cir.setReturnValue(tradeInfo != null
+                && ItemShardPouch.getShardCount(menu.getPlayer()) >= tradeInfo.getB()
+                && bmt$hasTrade(tradeIndex + 1));
     }
 
     @Unique
-    private boolean blackMarketTweaks$checkExpertiseUtil(int lvlRequired) {
-        List<TieredSkill> skills = ClientExpertiseData.getLearnedTalentNodes();
+    private boolean bmt$hasTrade(int trade) {
+        if (trade <= ModConfig.BASE_TRADES.get()) {
+            return true;
+        }
 
-        for (TieredSkill skill : skills) {
-            if (skill.getChild() instanceof BlackMarketExpertise && skill.getSpentLearnPoints() >= lvlRequired) {
+        int level = trade - ModConfig.BASE_TRADES.get();
+        for (TieredSkill skill : ClientExpertiseData.getLearnedTalentNodes()) {
+            if (skill.getChild() instanceof BlackMarketExpertise && skill.getSpentLearnPoints() >= level) {
                 return true;
             }
         }
         return false;
     }
+
+    @Unique
+    private LateInitLegendaryParticle bmt$createParticle(int xOffset, int yOffset, float min, float max) {
+        return (LateInitLegendaryParticle) new LateInitLegendaryParticle(this, xOffset, yOffset)
+                .spawnedWidthHeight(0, 28).angleRange(min, max)
+                .quantityRange(1, 2).delayRange(0, 10).lifespanRange(10, 50).sizeRange(1, 4).speedRange(0.05F, 0.45F)
+                .particleColours(bmt$PARTICLE_COLORS);
+    }
+
+    @Unique
+    private void bmt$translateToGui(ISize screen, ISpatial gui, ISpatial parent, IMutableSpatial world) {
+        world.translateXY(gui);
+    }
+
+    @Shadow protected abstract void updateTradeLabels();
+
+    @Shadow protected abstract boolean canBuyTrade(int tradeIndex);
+    @Shadow protected abstract void buyTrade(int tradeIndex);
+
+    @Shadow protected abstract boolean canBuyRandomTrade();
+    @Shadow protected abstract void buyRandomTrade();
 }

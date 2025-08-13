@@ -21,9 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = BlackMarketRenderer.class, remap = false)
 public abstract class BlackMarketRendererMixin {
 
-    @Shadow protected abstract void renderOutputItem(PoseStack matrixStack, MultiBufferSource buffer, int lightLevel, int overlay, float yOffset, float scale, ItemStack itemStack, Direction dir, int i);
-
-    @Shadow protected abstract void renderInputItem(PoseStack matrixStack, MultiBufferSource buffer, int lightLevel, int overlay, float yOffset, float scale, ItemStack itemStack, Direction dir, int i);
+    @Unique private static int blackMarketTweaks$counter = -1;
 
     @Inject(method = "render(Liskallia/vault/block/entity/BlackMarketTileEntity;FLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;II)V", at = @At("HEAD"), cancellable = true)
     private void renderMoreTradeItems(BlackMarketTileEntity blackMarketTile, float partialTicks, PoseStack matrixStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay, CallbackInfo ci) {
@@ -96,8 +94,6 @@ public abstract class BlackMarketRendererMixin {
         blackMarketTweaks$counter = i;
     }
 
-    @Unique private static int blackMarketTweaks$counter = -1;
-
     @Redirect(method = "renderInputItem", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(DDD)V", ordinal = 1), remap = true)
     private void appositionMoreItemsCorrectly(PoseStack instance, double x, double y, double z) {
         int i = blackMarketTweaks$counter;
@@ -108,4 +104,6 @@ public abstract class BlackMarketRendererMixin {
         }
     }
 
+    @Shadow protected abstract void renderInputItem(PoseStack matrixStack, MultiBufferSource buffer, int lightLevel, int overlay, float yOffset, float scale, ItemStack itemStack, Direction dir, int i);
+    @Shadow protected abstract void renderOutputItem(PoseStack matrixStack, MultiBufferSource buffer, int lightLevel, int overlay, float yOffset, float scale, ItemStack itemStack, Direction dir, int i);
 }
