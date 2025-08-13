@@ -9,10 +9,7 @@ import iskallia.vault.network.message.ServerboundResetBlackMarketTradesMessage;
 import iskallia.vault.skill.base.Skill;
 import iskallia.vault.skill.prestige.BlackMarketRerollsPrestigePowerPower;
 import iskallia.vault.skill.prestige.helper.PrestigeHelper;
-import iskallia.vault.skill.tree.PrestigeTree;
 import iskallia.vault.world.data.PlayerBlackMarketData;
-import iskallia.vault.world.data.PlayerPrestigePowersData;
-import net.minecraft.client.Minecraft;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -42,7 +39,7 @@ public class ServerboundResetBlackMarketTradesMessageMixin {
             }
 
             PlayerBlackMarketData.BlackMarket playerMarket = PlayerBlackMarketData.get(context.getSender().server).getBlackMarket(context.getSender());
-            double chance = PrestigeHelper.getPrestige(Minecraft.getInstance().player).getAll(BlackMarketRerollsPrestigePowerPower.class, Skill::isUnlocked).isEmpty() ? -1 : 0.25;
+            double chance = PrestigeHelper.getPrestige(serverPlayer).getAll(BlackMarketRerollsPrestigePowerPower.class, Skill::isUnlocked).isEmpty() ? -1 : 0.25;
 
             OverSizedInventory container = ((BlackMarketInventory) be).bmt$get();
             if (Math.random() > chance) {
