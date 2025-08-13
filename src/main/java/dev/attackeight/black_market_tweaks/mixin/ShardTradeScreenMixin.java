@@ -128,7 +128,7 @@ public abstract class ShardTradeScreenMixin extends AbstractElementContainerScre
                 .layout((screen, gui, parent, world) -> world.translateXY(gui)));
         this.addElement((new TextureAtlasElement(Spatials.positionXY(-37, 18), ScreenTextures.SOUL_SHARD_TRADE_ORNAMENT))
                 .layout((screen, gui, parent, world) -> world.translateXY(gui)));
-        this.addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(-23, 34),
+        this.addElement((FakeItemSlotElement)(new FakeItemSlotElement(Spatials.positionXY(-21, 32),
                 () -> new ItemStack(ModItems.UNKNOWN_ITEM), () -> !this.canBuyRandomTrade()))
                 .layout((screen, gui, parent, world) -> world.translateXY(gui)))
                 .whenClicked(this::buyRandomTrade)
@@ -153,7 +153,7 @@ public abstract class ShardTradeScreenMixin extends AbstractElementContainerScre
         this.addElement((new TextureAtlasElement(this.getGuiSpatial(), ScreenTextures.OMEGA_BLACK_MARKET_ORNAMENT))
                 .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 127, gui.top() + 70)));
         this.addElement((new TextureAtlasElement(this.getGuiSpatial(), TextureDefinitions.BLACK_MARKET_REROLL_ORNAMENT))
-                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() - 27, gui.top() + 80)));
+                .layout((screen, gui, parent, world) -> world.positionXY(gui.left() - 26, gui.top() + 80)));
 
         for(int i = 0; i < 2; ++i) {
             int tradeIndex = i;
