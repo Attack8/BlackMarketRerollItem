@@ -16,6 +16,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -32,6 +34,14 @@ public abstract class PlayerBlackMarketDataMixin {
     @Shadow public abstract void syncToClient(MinecraftServer server);
 
     @Shadow @Final PlayerBlackMarketData this$0;
+
+    @Shadow private LocalDateTime nextReset;
+
+    @Inject(method = "setNextReset", at = @At("HEAD"), cancellable = true)
+    private void ignoreExpertises(UUID playerUuid, CallbackInfo ci) {
+        this.nextReset = LocalDateTime.now(ZoneId.of("UTC")).plusHours(ModConfigs.BLACK_MARKET.getResetHours()).plusMinutes(ModConfigs.BLACK_MARKET.getResetMinutes());
+        ci.cancel();
+    }
 
     @Inject(method = "resetTrades", at = @At("HEAD"), cancellable = true)
     private void rollSixTrades(UUID playerUuid, CallbackInfo ci) {

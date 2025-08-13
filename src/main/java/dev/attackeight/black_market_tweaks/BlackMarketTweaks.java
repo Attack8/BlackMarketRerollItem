@@ -2,6 +2,7 @@ package dev.attackeight.black_market_tweaks;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.ItemLike;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -35,4 +36,7 @@ public class BlackMarketTweaks {
         return LAST_CLICKED_POS.get(id);
     }
 
+    public static ResourceLocation id(String path) {
+        return new ResourceLocation(ID, path);
+    }
 }
