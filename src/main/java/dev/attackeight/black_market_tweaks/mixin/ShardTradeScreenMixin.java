@@ -87,10 +87,10 @@ public abstract class ShardTradeScreenMixin extends AbstractElementContainerScre
         ISpatial guiSpatial = this.getGuiSpatial();
 
         // Core Gui
-        this.addElement(new LabelElement<>(Spatials.positionXY(-47, 7), new TextComponent("Black Market").withStyle(bmt$TITLE_TEXT), LabelTextStyle.defaultStyle())
-                .layout(this::bmt$translateToGui));
         this.addElement(new TextureAtlasElement<>(guiSpatial, ModTextures.BLACK_MARKET_BACKGROUND)
                 .layout((screen, gui, parent, world) -> world.translateXY(gui.left() - 55, gui.top()).size(Spatials.copy(gui))));
+        this.addElement(new LabelElement<>(Spatials.positionXY(-47, 7), new TextComponent("Black Market").withStyle(bmt$TITLE_TEXT), LabelTextStyle.defaultStyle())
+                .layout(this::bmt$translateToGui));
         this.addElement(new SlotsElement<>(this).layout(this::bmt$translateToGui));
 
         // Reset Timer
@@ -158,7 +158,7 @@ public abstract class ShardTradeScreenMixin extends AbstractElementContainerScre
             int yIndex = index % 3;
             boolean omega = yIndex == 2;
 
-            int xOffset = (index < 3 ? 0 : 105) - (omega ? 3 : 0);
+            int xOffset = (index < 3 ? 0 : 105) - (omega ? 1 : 0);
             int yOffset = yIndex * 33 - (omega ? 1 : 0);
 
             // Ornament
@@ -167,7 +167,7 @@ public abstract class ShardTradeScreenMixin extends AbstractElementContainerScre
                         .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 24 + xOffset, gui.top() + 6)));
             } else if (omega) {
                 this.addElement((new TextureAtlasElement<>(guiSpatial, ScreenTextures.OMEGA_BLACK_MARKET_ORNAMENT))
-                        .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 22 + xOffset, gui.top() + 70)));
+                        .layout((screen, gui, parent, world) -> world.positionXY(gui.left() + 23 + xOffset, gui.top() + 70)));
             }
 
             // Background Button
@@ -248,6 +248,16 @@ public abstract class ShardTradeScreenMixin extends AbstractElementContainerScre
 
     @Inject(method = "render", at = @At(value = "HEAD"), cancellable = true, remap = true)
     private void render(PoseStack poseStack, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+        if (this.needsLayout) {
+            this.layout(Spatials.zero());
+            this.needsLayout = false;
+        }
+
+        this.renderBackgroundFill(poseStack);
+        this.renderElements(poseStack, mouseX, mouseY, partialTick);
+        this.renderSlotItems(poseStack, mouseX, mouseY, partialTick);
+        this.renderDebug(poseStack);
+
         this.dt += partialTick;
         for(; this.dt >= 0.5F; this.dt -= 0.5F) {
             for (int i = 0; i < this.bmt$particles.length / 2; i++) {
@@ -266,15 +276,6 @@ public abstract class ShardTradeScreenMixin extends AbstractElementContainerScre
             }
         }
 
-        if (this.needsLayout) {
-            this.layout(Spatials.zero());
-            this.needsLayout = false;
-        }
-
-        this.renderBackgroundFill(poseStack);
-        this.renderElements(poseStack, mouseX, mouseY, partialTick);
-        this.renderSlotItems(poseStack, mouseX, mouseY, partialTick);
-        this.renderDebug(poseStack);
         this.renderTooltips(poseStack, mouseX, mouseY);
         ci.cancel();
     }

@@ -8,9 +8,11 @@ import iskallia.vault.container.oversized.OverSizedInventory;
 import iskallia.vault.network.message.ServerboundResetBlackMarketTradesMessage;
 import iskallia.vault.skill.base.Skill;
 import iskallia.vault.skill.prestige.BlackMarketRerollsPrestigePowerPower;
+import iskallia.vault.skill.prestige.helper.PrestigeHelper;
 import iskallia.vault.skill.tree.PrestigeTree;
 import iskallia.vault.world.data.PlayerBlackMarketData;
 import iskallia.vault.world.data.PlayerPrestigePowersData;
+import net.minecraft.client.Minecraft;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -20,7 +22,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Random;
 import java.util.function.Supplier;
 
 @Mixin(value = ServerboundResetBlackMarketTradesMessage.class, remap = false)
@@ -31,31 +32,25 @@ public class ServerboundResetBlackMarketTradesMessageMixin {
         NetworkEvent.Context context = contextSupplier.get();
         context.enqueueWork(() -> {
             ServerPlayer serverPlayer = context.getSender();
-            if (serverPlayer != null) {
-                BlockEntity be = serverPlayer.level.getBlockEntity(BlackMarketTweaks.getLastClickedPos(serverPlayer.getUUID()));
-                if (be instanceof BlackMarketTileEntity) {
-                    try {
-                        PlayerBlackMarketData.BlackMarket playerMarket = PlayerBlackMarketData.get(context.getSender().server).getBlackMarket(context.getSender());
-                        PrestigeTree prestige = PlayerPrestigePowersData.get(context.getSender().server).getPowers(context.getSender());
-
-                        float chance = -1;
-
-                        for (BlackMarketRerollsPrestigePowerPower power : prestige.getAll(BlackMarketRerollsPrestigePowerPower.class, Skill::isUnlocked)) {
-                            chance = 0.25f;
-                        }
-
-                        boolean skip = new Random().nextFloat(0, 1) <= chance;
-
-                        OverSizedInventory container = ((BlackMarketInventory) be).bmt$get();
-                        ItemStack pearl = container.getItem(0);
-                        pearl.shrink(skip ? 0 : ModConfig.COST.get());
-                        container.setItem(0, pearl);
-                        playerMarket.resetTradesWithoutTimer(context.getSender());
-                    } catch (Exception e) {
-                        BlackMarketTweaks.LOGGER.error(e.toString());
-                    }
-                }
+            if (serverPlayer == null) {
+                return;
             }
+
+            BlockEntity be = serverPlayer.level.getBlockEntity(BlackMarketTweaks.getLastClickedPos(serverPlayer.getUUID()));
+            if (!(be instanceof BlackMarketTileEntity)) {
+                return;
+            }
+
+            PlayerBlackMarketData.BlackMarket playerMarket = PlayerBlackMarketData.get(context.getSender().server).getBlackMarket(context.getSender());
+            double chance = PrestigeHelper.getPrestige(Minecraft.getInstance().player).getAll(BlackMarketRerollsPrestigePowerPower.class, Skill::isUnlocked).isEmpty() ? -1 : 0.25;
+
+            OverSizedInventory container = ((BlackMarketInventory) be).bmt$get();
+            if (Math.random() > chance) {
+                ItemStack pearl = container.getItem(0);
+                pearl.shrink(ModConfig.COST.get());
+                container.setItem(0, pearl);
+            }
+            playerMarket.resetTradesWithoutTimer(context.getSender());
         });
 
         context.setPacketHandled(true);
