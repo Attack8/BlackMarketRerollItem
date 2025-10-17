@@ -45,7 +45,7 @@ public abstract class BlackMarketBlockMixin extends HorizontalDirectionalBlock i
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        this.onInventoryBlockDestroy(level, pos);
+        this.onInventoryBlockDestroy(level, pos, state, newState);
         super.onRemove(state, level, pos, newState, isMoving);
     }
 
