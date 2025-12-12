@@ -1,7 +1,7 @@
 package dev.attackeight.black_market_tweaks.gui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import iskallia.vault.client.ClientShardTradeData;
+import iskallia.vault.client.data.ClientShardTradeData;
 import iskallia.vault.client.gui.framework.element.DynamicLabelElement;
 import iskallia.vault.client.gui.framework.render.spi.IElementRenderer;
 import iskallia.vault.client.gui.framework.spatial.spi.IPosition;
