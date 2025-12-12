@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import iskallia.vault.block.BlackMarketBlock;
 import iskallia.vault.block.entity.BlackMarketTileEntity;
 import iskallia.vault.block.render.BlackMarketRenderer;
-import iskallia.vault.client.ClientShardTradeData;
+import iskallia.vault.client.data.ClientShardTradeData;
 import iskallia.vault.init.ModItems;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.Direction;
