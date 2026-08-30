@@ -140,7 +140,7 @@ public abstract class ShardTradeScreenMixin extends AbstractElementContainerScre
         this.addElement(new TextureAtlasElement<>(Spatials.positionXY(-37, 18), ScreenTextures.SOUL_SHARD_TRADE_ORNAMENT)
                 .layout(this::bmt$translateToGui));
         this.addElement(new FakeItemSlotElement<>(Spatials.positionXY(-21, 34), () -> new ItemStack(ModItems.UNKNOWN_ITEM), () -> !this.canBuyRandomTrade())
-                .whenClicked(this::buyRandomTrade)
+                .whenClicked((button) -> this.buyRandomTrade())
                 .tooltip((tooltipRenderer, poseStack, mouseX, mouseY, tooltipFlag) -> {
                     tooltipRenderer.renderTooltip(poseStack, new ItemStack(ModItems.UNKNOWN_ITEM), mouseX, mouseY, TooltipDirection.RIGHT);
                     return true;
@@ -196,7 +196,7 @@ public abstract class ShardTradeScreenMixin extends AbstractElementContainerScre
                 return info == null ? ItemStack.EMPTY : info.getA().copy();
             }, () -> !this.canBuyTrade(index)))
                     .setLabelStackCount()
-                    .whenClicked(() -> {
+                    .whenClicked((click) -> {
                         if (omega) {
                             bmt$particles[xIndex].pop(4, 20);
                             bmt$particles[xIndex + 2].pop(4, 20);
